@@ -37,4 +37,3 @@ except KeyboardInterrupt:
     print("\nInterrupted Spoofing found CTRL + C------------ Restoring to normal state..")
     restore(targetIP, gatewayIP)
     restore(gatewayIP, targetIP)
-scasdc
