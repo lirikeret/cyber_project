@@ -12,8 +12,6 @@ class ArpSpoofer:
         self.gatewayIP = gatewayIP #is gatewayIP
         self.sourceMAC = sourceMAC
 
-
-
     @staticmethod
     def get_mac(destinationIP, srcIP):
         p = sr1(scapy.ARP(op=scapy.ARP.who_has, psrc=srcIP, pdst=destinationIP))
