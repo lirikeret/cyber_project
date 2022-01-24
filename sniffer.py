@@ -63,6 +63,7 @@ class sniffer:
         packet = self.receive_victim()
         self.db.write_to_victim(self.packets,packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
                                 packet[TCP].sport, packet[TCP].dport)
+        # TODO: check what fetch returns
         self.db.get_from_router(self.packets, True, True, True, True, True, True, True, True, True)
         self.packets+=1
         param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
@@ -81,6 +82,7 @@ class sniffer:
         packet = self.receive_router()
         self.db.write_to_router(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
                                 packet[TCP].sport, packet[TCP].dport)
+        #TODO: check what fetch returns
         self.db.get_from_router(self.packets,True,True,True,True,True,True,True,True,True)
         self.packets+=1
         param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
