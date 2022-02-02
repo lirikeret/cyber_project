@@ -16,14 +16,14 @@ class Sniffer:
         self.spoofer.start()
 
     def victim_filter(self, packet):
-        return packet[IP].src == self.spoofer.targetIP
+        return IP in packet and packet[IP].src == self.spoofer.targetIP
 
     def receive_victim(self):
         p = sniff(count=1, lfilter=self.victim_filter)
         return p
 
     def router_filter(self, packet):
-        return packet[IP].src == self.spoofer.gatewayIP
+        return IP in packet and packet[IP].src == self.spoofer.gatewayIP
 
     def receive_router(self):
         p = sniff(count=1, lfilter=self.router_filter)
@@ -65,10 +65,10 @@ class Sniffer:
 
     def handle_packets_from_victim(self):
         print("start h/p/v")
-        packet = self.receive_victim()
+        packets = self.receive_victim()
+        packet = packets[0]
         self.db.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
-                                packet[Raw].load,
-                                packet[TCP].sport, packet[TCP].dport)
+                                packet[Raw].load, packet[TCP].sport, packet[TCP].dport)
         # fetchall returns list of tupples
         self.db.get_from_router(self.packets, True, True, True, True, True, True, True, True, True)
         self.packets += 1
@@ -86,10 +86,11 @@ class Sniffer:
         self.send_packet(packet)
 
     def handle_packets_from_router(self):
-        packet = self.receive_router()
+        print("h/p/r")
+        packets = self.receive_router()
+        packet = packets[0]
         self.db.write_to_router(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
-                                packet[Raw].load,
-                                packet[TCP].sport, packet[TCP].dport)
+                                packet[Raw].load,packet[TCP].sport, packet[TCP].dport)
         # fetchall returns list of tupples
         self.db.get_from_router(self.packets, True, True, True, True, True, True, True, True, True)
         self.packets += 1
