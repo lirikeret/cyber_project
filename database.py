@@ -7,32 +7,27 @@ class DataBase:
         self.connection = sqlite3.connect("project_db.db")
         self.cursor = self.connection.cursor()
 
-
     def write_to_router(self, packet_id,src_ip, dst_ip, req_type, req_params, data, src_port, dst_port, src_mac,
                         dst_mac):
         self.cursor.execute(
             f"INSERT INTO router_db VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type}, {req_params}"
             f", {data}, {src_port}, {dst_port}, {src_mac}, {dst_mac})")
-        self.packets += 1
 
     def write_to_router_changed(self,packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port,
                                 src_mac, dst_mac):
         self.cursor.execute(
             f"INSERT INTO router_db_chnged VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type}, {req_params},"
             f"{data}, {src_port}, {dst_port}, {src_mac}, {dst_mac})")
-        self.packets += 1
 
     def write_to_victim(self,packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port, src_mac,dst_mac):
         self.cursor.execute(
             f"INSERT INTO victim_db VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type}, {req_params},"
             f"{data}, {src_port}, {dst_port}, {src_mac}, {dst_mac})")
-        self.packets += 1
 
     def write_to_victim_changed(self,packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port, src_mac, dst_mac):
         self.cursor.execute(
             f"INSERT INTO victim_db_chnged VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type}, {req_params},"
             f"{data}, {src_port}, {dst_port}, {src_mac}, {dst_mac})")
-        self.packets += 1
 
     def get_from_router(self, packet_id, src_ip=False, dst_ip=False, req_type=False, req_params=False,
                         data=False, src_port=False, dst_port=False, src_mac=False, dst_mac=False):

