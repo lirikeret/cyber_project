@@ -67,10 +67,13 @@ class Sniffer:
         print("start h/p/v")
         packets = self.receive_victim()
         packet = packets[0]
-        self.db.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
-                                packet[Raw].load, packet[TCP].sport, packet[TCP].dport)
+        try:
+            self.db.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
+                                    packet[Raw].load, packet[TCP].sport, packet[TCP].dport)
+        except:
+            packet.show()
         # fetchall returns list of tupples
-        self.db.get_from_router(self.packets, True, True, True, True, True, True, True, True, True)
+        self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
         self.packets += 1
         param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
                       "src_port": None, "dst_port": None, "ttl": None}
@@ -92,7 +95,7 @@ class Sniffer:
         self.db.write_to_router(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
                                 packet[Raw].load,packet[TCP].sport, packet[TCP].dport)
         # fetchall returns list of tupples
-        self.db.get_from_router(self.packets, True, True, True, True, True, True, True, True, True)
+        self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
         self.packets += 1
         param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
                       "src_port": None, "dst_port": None, "ttl": None}

