@@ -16,7 +16,7 @@ class Sniffer:
         self.spoofer.start()
 
     def victim_filter(self, packet):
-        return IP in packet and packet[IP].src == self.spoofer.targetIP
+        return IP in packet and packet[IP].src == self.spoofer.targetIP and Raw in packet
 
     def receive_victim(self):
         p = sniff(count=1, lfilter=self.victim_filter)
@@ -67,11 +67,8 @@ class Sniffer:
         print("start h/p/v")
         packets = self.receive_victim()
         packet = packets[0]
-        try:
-            self.db.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
-                                    packet[Raw].load, packet[TCP].sport, packet[TCP].dport)
-        except:
-            packet.show()
+        self.db.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
+                                packet[Raw].load, packet[TCP].sport, packet[TCP].dport)
         # fetchall returns list of tupples
         self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
         self.packets += 1
