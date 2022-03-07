@@ -4,27 +4,27 @@ import sqlite3
 class DataBase:
 
     def __init__(self):
-        self.connection = sqlite3.connect("C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
+        self.connection = sqlite3.connect(
+            "C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
         self.cursor = self.connection.cursor()
 
-    def write_to_router(self, packet_id,src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
-        self.cursor.execute( f"INSERT INTO router_db VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type},"
-                             f" {req_params}, {data}, {src_port}, {dst_port})")
+    def write_to_router(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
+        self.cursor.execute(f"INSERT INTO router_db VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type},"
+                            f" {req_params}, {data}, {src_port}, {dst_port})")
         self.connection.commit()
 
-    def write_to_router_changed(self,packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
+    def write_to_router_changed(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
         self.cursor.execute(
             f"INSERT INTO router_db_chnged VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type}, {req_params},"
             f"{data}, {src_port}, {dst_port})")
         self.connection.commit()
 
-    def write_to_victim(self,packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
-        self.cursor.execute(
-            f"INSERT INTO victim_db VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type}, {req_params},"
-            f"{data}, {src_port}, {dst_port})")
+    def write_to_victim(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
+        self.cursor.execute(f"INSERT INTO victim_db VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type}, {req_params},"
+                            f"{data}, {src_port}, {dst_port})")
         self.connection.commit()
 
-    def write_to_victim_changed(self,packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
+    def write_to_victim_changed(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
         self.cursor.execute(
             f"INSERT INTO victim_db_chnged VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type}, {req_params},"
             f"{data}, {src_port}, {dst_port})")
