@@ -9,6 +9,7 @@ class DataBase:
         self.cursor = self.connection.cursor()
 
     def write_to_router(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
+
         self.cursor.execute(f"INSERT INTO router_db VALUES ({packet_id}, {src_ip}, {dst_ip}, {req_type},"
                             f" {req_params}, {data}, {src_port}, {dst_port})")
         self.connection.commit()

