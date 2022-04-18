@@ -9,14 +9,17 @@ class DataBase:
         self.connection = sqlite3.connect("C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
         self.cursor = self.connection.cursor()
         self.missions = queue.Queue()
-        self.on = True
-        t = threading.Thread(target=self.start)
-        t.start()
 
     def start(self):
-        #self.connection = sqlite3.connect(
-           # "C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
-        #self.cursor = self.connection.cursor()
+        self.on = True
+        t = threading.Thread(target=self.__start)
+        t.start()
+
+
+    def __start(self):
+        self.connection = sqlite3.connect(
+            "C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
+        self.cursor = self.connection.cursor()
         while self.on:
             if not self.missions.empty():
                 self.cursor.execute(*self.missions.get())
@@ -99,9 +102,9 @@ class DataBase:
 
     def get_last(self):
         last_router = self.cursor.execute("SELECT packet_id AS last_id FROM router_db ORDER BY packet_id DESC LIMIT 1").fetchall()
-        last_router = last_router[0] if len(last_router) > 0 else 0
+        last_router = last_router[0][0] if len(last_router) > 0 else 0
         last_victim = self.cursor.execute("SELECT packet_id AS last_id FROM victim_db ORDER BY packet_id DESC LIMIT 1").fetchall()
-        last_victim = last_victim[0] if len(last_victim) else 0
+        last_victim = last_victim[0][0] if len(last_victim) else 0
         maxi = max(last_router,last_victim)
         return maxi + 1 if maxi else maxi
 

