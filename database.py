@@ -1,20 +1,35 @@
 import sqlite3
+import queue
+import threading
 
 
 class DataBase:
 
     def __init__(self):
-        self.connection = sqlite3.connect(
-            "C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
+        self.connection = sqlite3.connect("C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
         self.cursor = self.connection.cursor()
+        self.missions = queue.Queue()
+        self.on = True
+        t = threading.Thread(target=self.start)
+        t.start()
+
+    def start(self):
+        #self.connection = sqlite3.connect(
+           # "C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
+        #self.cursor = self.connection.cursor()
+        while self.on:
+            if not self.missions.empty():
+                self.cursor.execute(*self.missions.get())
+                self.connection.commit()
+        self.close_connection()
+
 
     def write_to(self, table, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
         # line = f"INSERT INTO {table} VALUES ({packet_id}, '{src_ip}', '{dst_ip}', '{memoryview(req_type)}', "\
          #      f"'{memoryview(req_params)}', '{memoryview(data)}', {src_port}, {dst_port})"
         line2 = f"INSERT INTO {table} VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         print(line2)
-        self.cursor.execute(line2, (packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port))
-        self.connection.commit()
+        self.missions.put((line2, (packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port)))
 
     def write_to_router(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
         self.write_to("router_db", packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port)
@@ -81,3 +96,12 @@ class DataBase:
 
     def close_connection(self):
         self.cursor.close()
+
+    def get_last(self):
+        last_router = self.cursor.execute("SELECT packet_id AS last_id FROM router_db ORDER BY packet_id DESC LIMIT 1").fetchall()
+        last_router = last_router[0] if len(last_router) > 0 else 0
+        last_victim = self.cursor.execute("SELECT packet_id AS last_id FROM victim_db ORDER BY packet_id DESC LIMIT 1").fetchall()
+        last_victim = last_victim[0] if len(last_victim) else 0
+        maxi = max(last_router,last_victim)
+        return maxi + 1 if maxi else maxi
+

