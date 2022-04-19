@@ -5,8 +5,8 @@ from threading import Lock
 
 from scapy.layers.l2 import Ether, getmacbyip
 
-from arpspoofer import ArpSpoofer
-from database import DataBase
+from mitm.arpspoofer import ArpSpoofer
+from mitm.database import DataBase
 
 
 def is_https(pack):

@@ -1,4 +1,4 @@
-from sniffer import Sniffer
+from mitm.sniffer import Sniffer
 import threading
 
 class FinalRun:
