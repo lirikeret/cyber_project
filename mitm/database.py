@@ -12,11 +12,11 @@ class DataBase:
 
     def start(self):
         self.on = True
-        t = threading.Thread(target=self.__start)
+        t = threading.Thread(target=self.start_missions)
         t.start()
 
 
-    def __start(self):
+    def start_missions(self):
         self.connection = sqlite3.connect(
             "C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
         self.cursor = self.connection.cursor()
