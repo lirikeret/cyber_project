@@ -2,8 +2,8 @@ from mitm.sniffer import Sniffer
 import threading
 
 class FinalRun:
-    def __init__(self, destinationMac, targetIP, gatewayIP, sourceMAC):
-        self.sniffer = Sniffer(destinationMac, targetIP, gatewayIP, sourceMAC)
+    def __init__(self, targetIP, gatewayIP):
+        self.sniffer = Sniffer(targetIP, gatewayIP)
 
     def start(self):
         t_sniff = threading.Thread(target=self.sniffer.sniff_all)

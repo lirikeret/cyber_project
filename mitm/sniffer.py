@@ -19,8 +19,8 @@ def is_http(pack):
 
 class Sniffer:
 
-    def __init__(self, destinationMac, targetIP, gatewayIP, sourceMAC):
-        self.spoofer = ArpSpoofer(destinationMac, targetIP, gatewayIP, sourceMAC)
+    def __init__(self, targetIP, gatewayIP):
+        self.spoofer = ArpSpoofer(targetIP, gatewayIP)
         self.db = DataBase()
         self.packets = self.db.get_last()
         self.db.start()
