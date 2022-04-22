@@ -2,6 +2,7 @@ from tkinter import *
 from PIL import ImageTk, Image
 from encrypting.users import Users
 
+INVALID_LIST = ["'", "username", "password"]
 
 class ProjectGui:
     def __init__(self):
@@ -15,8 +16,20 @@ class ProjectGui:
         self.un_entry = Entry(self.root, font=("Clibri", 18), width=14, fg="black", bg="white", bd=0)
         self.pw_entry = Entry(self.root, font=("Clibri", 18), width=14, fg="black", bg="white", bd=0)
         self.users = Users()
-        self.login_btn = Button(self.root, text="login", font=("Clibri", 12), width=7, fg="white", bg="#42536e", command=self.handle_info)
-        self.textid=0
+        self.login_btn = Button(self.root, text="login", font=("Clibri", 12), width=7, fg="white", bg="#42536e",
+                                command=self.handle_info)
+        self.textid = 0
+        self.start_btn = Button(self.root, text="start", font=("Clibri", 10), width=5, fg="white", bg="white",
+                                command=self.check_input)
+        self.victimip_entry = Entry(self.root, font=("Clibri", 18), width=14, fg="black", bg="white", bd=0)
+        self.gatewayip_entry = Entry(self.root, font=("Clibri", 18), width=14, fg="black", bg="white", bd=0)
+
+    def check_validation(self, pw, un):
+        for i in INVALID_LIST:
+            if i in pw or i in un:
+                return False
+        return True
+
 
     def resizer(self, e, canvas):
         global bg1, resized_bg, new_bg
@@ -76,7 +89,8 @@ class ProjectGui:
         self.un_entry.bind("<Button-1>", self.entry_clear)
         self.pw_entry.bind("<Button-1>", self.entry_clear)
 
-        self.login_btn = Button(self.root, text="login", font=("Clibri", 12), width=7, fg="white", bg="#42536e", command=self.handle_info)
+        self.login_btn = Button(self.root, text="login", font=("Clibri", 12), width=7, fg="white", bg="#42536e",
+                                command=self.handle_info)
         self.back_button = Button(self.root, text="back", font=("Clibri", 10), width=5, fg="white", bg="#2a3e5a",
                                   command=self.login_registry_screen)
 
@@ -86,17 +100,20 @@ class ProjectGui:
     def handle_info(self):
         pw = str(self.pw_entry.get())
         un = str(self.un_entry.get())
-        ans = self.users.check_user(un, pw)
-        if ans == "create user":
-            self.my_canvas.create_text(90, 100, text="User doesn't exists.", font=("Clibri bald", 12),
-                                      fill="white", width=160)
-            # user doesnt exists
-        elif ans == True:
-            self.main_screen()
-        elif ans == False:
-            self.my_canvas.create_text(90, 100, text="Invalid password. Please try again.", font=("Clibri bald", 12),
+        valid = self.check_validation(pw, un)
+        if valid:
+            ans = self.users.check_user(un, pw)
+            if ans:
+                self.main_screen()
+            elif not ans:
+                self.my_canvas.delete(self.textid)
+                self.textid = self.my_canvas.create_text(90, 100, text="Username or password are incorrect.", font=("Clibri bald", 12),
+                                           fill="white", width=160)
+                # wrong password
+        else:
+            self.my_canvas.delete(self.textid)
+            self.textid = self.my_canvas.create_text(90, 100, text="Invalid input", font=("Clibri bald", 12),
                                        fill="white", width=160)
-            # wrong password
 
     def reg_screen(self):
         """
@@ -120,24 +137,26 @@ class ProjectGui:
         self.un_entry.bind("<Button-1>", self.entry_clear)
         self.pw_entry.bind("<Button-1>", self.entry_clear)
 
-        self.log_button = Button(self.root, text="register", font=("Clibri", 12), width=7, fg="white", bg="#42536e", command= self.conf_screen)
+        self.log_button = Button(self.root, text="register", font=("Clibri", 12), width=7, fg="white", bg="#42536e",
+                                 command=self.conf_screen)
         self.back_button = Button(self.root, text="back", font=("Clibri", 10), width=5, fg="white", bg="#2a3e5a",
                                   command=self.login_registry_screen)
 
         log_button_window = self.my_canvas.create_window(380, 292, anchor="nw", window=self.log_button)
         back_button_window = self.my_canvas.create_window(10, 10, anchor="nw", window=self.back_button)
 
-        self.textid = self.my_canvas.create_text(90, 100, text="Welcome! please enter your desiered username and password. "
-                                                 "After the registry, log in.", font=("Clibri bald", 12), fill="white",
-                                   width=160)
+        self.textid = self.my_canvas.create_text(90, 100,
+                                                 text="Welcome! please enter your desiered username and password. "
+                                                      "After the registry, log in.", font=("Clibri bald", 12), fill="white",
+                                                 width=160)
 
     def conf_screen(self):
         pw = str(self.pw_entry.get())
         un = str(self.un_entry.get())
-        if self.users.insert_user(un,pw) == "exists":
+        if self.users.insert_user(un, pw) == "exists":
             self.my_canvas.delete(self.textid)
             self.textid = self.my_canvas.create_text(90, 100, text="User already exists.", font=("Clibri bald", 12),
-                                       fill="white", width=160)
+                                                     fill="white", width=160)
         else:
             self.my_canvas.delete(self.textid)
             self.un_entry.destroy()
@@ -146,17 +165,35 @@ class ProjectGui:
             self.my_canvas.create_text(90, 100, text="Registry completed successfully! go back and log in. ",
                                        font=("Clibri bald", 12), fill="white", width=160)
 
-
     def main_screen(self):
         self.my_canvas.destroy()
 
         self.root.geometry("900x500+290+150")
         self.root.title("MITM main screen")
+        self.root.configure(bg="#2a3e5a")
         icon = PhotoImage(file=r"C:\Users\lirik\Downloads\icon.png")
         self.root.iconphoto(False, icon)
         self.root.resizable(height=True, width=True)
 
-        
+        self.start_btn = Button(self.root, text="start", font=("Clibri", 18), width=5, fg="black", bg="white",
+                                command=self.check_input)
+
+        self.start_btn.pack()
+        self.start_btn.place(relx=0.45, rely=0.8, anchor="nw")
+
+        self.victimip_entry = Entry(self.root, font=("Clibri", 20), width=14, fg="black", bg="white", bd=0)
+        self.gatewayip_entry = Entry(self.root, font=("Clibri", 20), width=14, fg="black", bg="white", bd=0)
+
+        self.victimip_entry.pack()
+        self.gatewayip_entry.pack()
+        self.victimip_entry.place(relx=0.45, rely=0.3, anchor="nw")
+        self.gatewayip_entry.place(relx=0.45, rely=0.5, anchor="nw")
+
+
+
+
+    def check_input(self):
+        pass
 
 
 if __name__ == '__main__':
