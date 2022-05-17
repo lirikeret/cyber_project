@@ -1,14 +1,19 @@
 from tkinter import *
+from tkinter import ttk
+from typing import Tuple
+
 from PIL import ImageTk, Image
 from encrypting.users import Users
 import subprocess
 import re
+from mitm.final_run import FinalRun
 
 CMDIP_REGEX = "\s((?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))\s"
 SUBNET_REG = "Subnet\sMask\s[\.|\s]+:\s((?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))"
 GATEWAY_REG = "Default\sGateway\s[\.|\s]+:\s((?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))"
 GATEWAYIP = ''
 IP_LIST = []
+VICTIM_IP = ''
 
 def find_mask():
     text = str(subprocess.check_output("cmd /c ipconfig", stderr=subprocess.STDOUT, shell=True))
@@ -75,6 +80,11 @@ class ProjectGui:
         self.lable3 = Label(self.root, text="Invalid input.", font=("Clibri", 20), bg=BG_COLOR1)
         self.lable4 = Label(self.root, text="Invalid input.", font=("Clibri", 20), bg=BG_COLOR1)
         self.lable5 = Label(self.root, text="Invalid input.", font=("Clibri", 20), bg=BG_COLOR1)
+        self.var = IntVar()
+        self.var.set(1)
+        self.read_b = Radiobutton(self.root, text="Read data", font=("Clibri", 20), variable=self.var, value=1)
+        self.change_b = Radiobutton(self.root, text="Edit data", font=("Clibri", 20), variable=self.var, value=2)
+
 
     def check_validation(self, pw, un):
         for i in INVALID_LIST:
@@ -267,17 +277,23 @@ class ProjectGui:
         return False
 
     def check_input(self):
-        vmip = str(self.victimip_entry.get())
+        VICTIM_IP = str(self.victimip_entry.get())
         gwip = str(self.gatewayip_entry.get())
-        print(str(gwip) + str(vmip))
-        print(str(self.is_ip(vmip)) + str(self.is_ip(gwip)) + str(self.is_in_list(vmip, IP_LIST)) + str(gwip == GATEWAYIP))
-        if self.is_ip(vmip) and self.is_ip(gwip) and self.is_in_list(vmip, IP_LIST) and gwip == GATEWAYIP:
-            self.info_screen()
+        print(str(gwip) + str(VICTIM_IP))
+        print(str(self.is_ip(VICTIM_IP)) + str(self.is_ip(gwip)) + str(self.is_in_list(VICTIM_IP, IP_LIST)) + str(gwip == GATEWAYIP))
+        if self.is_ip(VICTIM_IP) and self.is_ip(gwip) and self.is_in_list(VICTIM_IP, IP_LIST) and gwip == GATEWAYIP:
+            self.action_screen()
         else:
             self.lable5 = Label(self.root, text="Invalid input.", font=("Clibri", 20), bg=BG_COLOR1)
             self.lable5.place(relx=0.1, rely=0.4, anchor="nw")
 
-    def info_screen(self):
+    def choose_action(self, value):
+        if value == 1:
+            self.read_screen()
+        elif value == 2:
+            self.edit_screen()
+
+    def action_screen(self):
         self.lable5.destroy()
         self.lable1.destroy()
         self.lable2.destroy()
@@ -286,6 +302,92 @@ class ProjectGui:
         self.victimip_entry.destroy()
         self.gatewayip_entry.destroy()
         self.start_btn.destroy()
+
+        self.read_b = Radiobutton(self.root, text="Read data", font=("Clibri", 20), variable=self.var, value=1, bg=BG_COLOR1)
+        self.change_b = Radiobutton(self.root, text="Edit data", font=("Clibri", 20), variable=self.var, value=2, bg=BG_COLOR1)
+
+        self.start_btn = Button(self.root, text="start", font=("Clibri", 18), width=5, fg="black", bg="white",
+                                command=lambda: self.choose_action(self.var.get()))
+
+        self.lable1 = Label(self.root, text="What would you like to do?", font=("Clibri", 20),
+                            bg=BG_COLOR1)
+
+        self.lable1.place(relx=0.3, rely=0.1, anchor="nw")
+        self.read_b.place(relx=0.40, rely=0.3, anchor="nw")
+        self.change_b.place(relx=0.4, rely=0.5, anchor="nw")
+        self.start_btn.place(relx=0.42, rely=0.8, anchor="nw")
+
+    def read_screen(self):
+        self.lable1.destroy()
+        self.read_b.destroy()
+        self.change_b.destroy()
+        self.start_btn.destroy()
+        self.root.configure(bg="white")
+
+
+        style = ttk.Style()
+        style.theme_use('default')
+        style.configure("Treeview", background="D3D3D3", foreground="white", rowheight=25, fieldbackground= "D3D3D3")
+        style.map("Treeview", background=[('selected', "#347083")])
+
+        tree_frame = Frame(self.root)
+        tree_frame.pack(pady=10)
+        tree_scroll = Scrollbar(tree_frame)
+        tree_scroll.pack(side=RIGHT, fill=Y)
+
+        self.my_tree = ttk.Treeview(tree_frame, yscrollcommand=tree_scroll.set, selectmode= "extended")
+        self.my_tree.pack()
+
+        tree_scroll.config(command= self.my_tree.yview())
+
+        self.my_tree['columns'] = ("packet id", "src ip", "dst ip", "request type", "request parameters", "data", "src port"
+                              , "dst port")
+        self.my_tree.column("#0", width=0, stretch=NO)
+        self.my_tree.column("packet id", anchor=CENTER, width=100)
+        self.my_tree.column("src ip", anchor=W, width=120)
+        self.my_tree.column("dst ip", anchor=W, width=120)
+        self.my_tree.column("request type", anchor=W, width=120)
+        self.my_tree.column("request parameters", anchor=W, width=120)
+        self.my_tree.column("data", anchor=W, width=120)
+        self.my_tree.column("src port", anchor=W, width=120)
+        self.my_tree.column("dst port", anchor=W, width=120)
+
+        self.my_tree.heading("#0", text="", anchor=W)
+        self.my_tree.heading("packet id", text="packet id", anchor=CENTER)
+        self.my_tree.heading("src ip", text="src ip", anchor=W)
+        self.my_tree.heading("dst ip", text="dst ip", anchor=W)
+        self.my_tree.heading("request type", text="request type", anchor=W)
+        self.my_tree.heading("request parameters", text="request parameters", anchor=W)
+        self.my_tree.heading("data", text="data", anchor=W)
+        self.my_tree.heading("src port", text="src port", anchor=W)
+        self.my_tree.heading("dst port", text="dst port", anchor=W)
+
+        self.my_tree.tag_configure('oddrow', background="white")
+        self.my_tree.tag_configure('evenrow', background="lightblue")
+
+        self.count = 0
+        attacker = FinalRun(VICTIM_IP,GATEWAYIP, self.insert_to_table)
+        attacker.start()
+
+    def insert_to_table(self, info: Tuple[str, Tuple[str, ...]]):
+        if self.count % 2 == 0:
+            self.my_tree.insert(parent='', index='end', iid=self.count, text='', values=info[1], tags=('evenrow',))
+        else:
+            self.my_tree.insert(parent='', index='end', iid=self.count, text='', values=info[1], tags=('oddrow',))
+        self.count += 1
+
+
+    def edit_screen(self):
+        self.lable1.destroy()
+        self.read_b.destroy()
+        self.change_b.destroy()
+        self.start_btn.destroy()
+        self.root.configure(bg="white")
+
+
+        #attack = FinalRun(VICTIM_IP, GATEWAYIP)
+        #attack.start()
+
 
 
 if __name__ == '__main__':

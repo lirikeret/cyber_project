@@ -5,10 +5,11 @@ import threading
 
 class DataBase:
 
-    def __init__(self):
+    def __init__(self, do_before_adding_to_database=None):
         self.connection = sqlite3.connect("C:\\Users\\lirik\\Downloads\\sqlitestudio-3.3.3\\SQLiteStudio\\project_db.db")
         self.cursor = self.connection.cursor()
         self.missions = queue.Queue()
+        self.do_before_adding_to_database = do_before_adding_to_database if do_before_adding_to_database else (lambda x: None)
 
     def start(self):
         self.on = True
@@ -26,13 +27,11 @@ class DataBase:
                 self.connection.commit()
         self.close_connection()
 
-
     def write_to(self, table, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
-        # line = f"INSERT INTO {table} VALUES ({packet_id}, '{src_ip}', '{dst_ip}', '{memoryview(req_type)}', "\
-         #      f"'{memoryview(req_params)}', '{memoryview(data)}', {src_port}, {dst_port})"
         line2 = f"INSERT INTO {table} VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-        print(line2)
-        self.missions.put((line2, (packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port)))
+        info = (line2, (packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port))
+        self.do_before_adding_to_database((table, info[1]))
+        self.missions.put(info)
 
     def write_to_router(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
         self.write_to("router_db", packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port)
@@ -46,8 +45,12 @@ class DataBase:
     def write_to_victim_changed(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
         self.write_to("victim_db_changed", packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port)
 
-    def get_from_router(self, packet_id, src_ip=False, dst_ip=False, req_type=False, req_params=False,
-                        data=False, src_port=False, dst_port=False):
+    def get_from(self, table):
+        self.missions.put(f"SELECT * FROM {table}")
+
+    def get_from_router(self):
+        self.get_from()
+        #TODO: change all of data pulling to select all
         try:
             rows = self.cursor.execute(f"SELECT {'packet_id, '}{'src_ip, ' if src_ip else ''}"
                                        f"{'dst_ip, ' if dst_ip else ''}{'request_type, ' if req_type else ''}"

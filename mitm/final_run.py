@@ -2,8 +2,8 @@ from mitm.sniffer import Sniffer
 import threading
 
 class FinalRun:
-    def __init__(self, targetIP, gatewayIP):
-        self.sniffer = Sniffer(targetIP, gatewayIP)
+    def __init__(self, targetIP, gatewayIP, do_before_adding_to_database):
+        self.sniffer = Sniffer(targetIP, gatewayIP, do_before_adding_to_database)
 
     def start(self):
         t_sniff = threading.Thread(target=self.sniffer.sniff_all)
