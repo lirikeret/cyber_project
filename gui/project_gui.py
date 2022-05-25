@@ -37,6 +37,7 @@ def clean_ip_list(ips, mask):
                 flag = False
         if flag:
             final_list.append(".".join(x))
+    del final_list[0]
     return final_list
 
 def avalable_ip_adresses():
@@ -87,6 +88,7 @@ class ProjectGui:
 
 
     def check_validation(self, pw, un):
+        #TODO: block weak passwords and username (8 chars min, several characters etc.)
         for i in INVALID_LIST:
             if i in pw or i in un:
                 return False
@@ -277,7 +279,9 @@ class ProjectGui:
         return False
 
     def check_input(self):
+        global VICTIM_IP
         VICTIM_IP = str(self.victimip_entry.get())
+        print("vip: " + str(VICTIM_IP))
         gwip = str(self.gatewayip_entry.get())
         print(str(gwip) + str(VICTIM_IP))
         print(str(self.is_ip(VICTIM_IP)) + str(self.is_ip(gwip)) + str(self.is_in_list(VICTIM_IP, IP_LIST)) + str(gwip == GATEWAYIP))
@@ -318,12 +322,12 @@ class ProjectGui:
         self.start_btn.place(relx=0.42, rely=0.8, anchor="nw")
 
     def read_screen(self):
+        self.root.geometry("1000x500+290+150")
         self.lable1.destroy()
         self.read_b.destroy()
         self.change_b.destroy()
         self.start_btn.destroy()
-        self.root.configure(bg="white")
-
+        self.root.configure(bg="#75BFD7")
 
         style = ttk.Style()
         style.theme_use('default')
@@ -365,7 +369,63 @@ class ProjectGui:
         self.my_tree.tag_configure('oddrow', background="white")
         self.my_tree.tag_configure('evenrow', background="lightblue")
 
+        self.data_frame = LabelFrame(self.root, text = "packet information", fg="black", bg="#75BFD7")
+        self.data_frame.pack(fill="x", expand="yes", padx=20)
+
+        id_lable = Label(self.data_frame, text="Packet ID", bg="#75BFD7")
+        id_lable.grid(row=0, column=0, padx=10, pady=10)
+        id_entry = Entry(self.data_frame)
+        id_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        srcip_lable = Label(self.data_frame, text="Src ip",bg="#75BFD7")
+        srcip_lable.grid(row=0, column=2, padx=10, pady=10)
+        srcip_entry = Entry(self.data_frame)
+        srcip_entry.grid(row=0, column=3, padx=10, pady=10)
+
+        dstip_lable = Label(self.data_frame, text="Dst ip", bg="#75BFD7")
+        dstip_lable.grid(row=0, column=4, padx=10, pady=10)
+        dstip_entry = Entry(self.data_frame)
+        dstip_entry.grid(row=0, column=5, padx=10, pady=10)
+
+        rt_lable = Label(self.data_frame, text="Request type", bg="#75BFD7")
+        rt_lable.grid(row=0, column=6, padx=10, pady=10)
+        rt_entry = Entry(self.data_frame)
+        rt_entry.grid(row=0, column=7, padx=10, pady=10)
+
+        rp_lable = Label(self.data_frame, text="Request parameters", bg="#75BFD7")
+        rp_lable.grid(row=1, column=0, padx=10, pady=10)
+        rp_entry = Entry(self.data_frame)
+        rp_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        data_lable = Label(self.data_frame, text="data", bg="#75BFD7")
+        data_lable.grid(row=1, column=2, padx=10, pady=10)
+        data_entry = Entry(self.data_frame)
+        data_entry.grid(row=1, column=3, padx=10, pady=10)
+
+        sp_lable = Label(self.data_frame, text="Src port", bg="#75BFD7")
+        sp_lable.grid(row=1, column=4, padx=10, pady=10)
+        sp_entry = Entry(self.data_frame)
+        sp_entry.grid(row=1, column=5, padx=10, pady=10)
+
+        dp_lable = Label(self.data_frame, text="Dst port", bg="#75BFD7")
+        dp_lable.grid(row=1, column=6, padx=10, pady=10)
+        dp_entry = Entry(self.data_frame)
+        dp_entry.grid(row=1, column=7, padx=10, pady=10)
+
+        self.button_frame = LabelFrame(self.root, text="Commands", bg="#75BFD7")
+        self.button_frame.pack(fill="x", expand="yes", padx=20)
+
+        update_button = Button(self.button_frame, text="continue",bg="#67A6BB")
+        update_button.grid(row=0, column=1, padx=10, pady=10)
+
+        stop_button = Button(self.button_frame, text="pause sennding packets", bg="#67A6BB")
+        stop_button.grid(row=0, column=0, padx=10, pady=10)
+
+        restore_button = Button(self.button_frame, text="stop attack", bg="#67A6BB")
+        restore_button.grid(row=0, column=2, padx=10, pady=10)
+
         self.count = 0
+        print("real vip" + str(VICTIM_IP))
         attacker = FinalRun(VICTIM_IP,GATEWAYIP, self.insert_to_table)
         attacker.start()
 
