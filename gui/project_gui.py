@@ -128,7 +128,7 @@ class ProjectGui:
 
         self.root.mainloop()
 
-    def entry_clear(self, e):
+    def entry_clear_un(self, e):
         if self.un_entry.get() == "username" or self.pw_entry.get() == "password":
             self.un_entry.delete(0, END)
             self.pw_entry.delete(0, END)
@@ -149,8 +149,8 @@ class ProjectGui:
         un_window = self.my_canvas.create_window(145, 240, anchor="nw", window=self.un_entry)
         pw_window = self.my_canvas.create_window(145, 290, anchor="nw", window=self.pw_entry)
 
-        self.un_entry.bind("<Button-1>", self.entry_clear)
-        self.pw_entry.bind("<Button-1>", self.entry_clear)
+        self.un_entry.bind("<Button-1>", self.entry_clear_un)
+        self.pw_entry.bind("<Button-1>", self.entry_clear_un)
 
         self.login_btn = Button(self.root, text="login", font=("Clibri", 12), width=7, fg="white", bg="#42536e",
                                 command=self.handle_info)
@@ -198,8 +198,8 @@ class ProjectGui:
         un_window = self.my_canvas.create_window(145, 240, anchor="nw", window=self.un_entry)
         pw_window = self.my_canvas.create_window(145, 290, anchor="nw", window=self.pw_entry)
 
-        self.un_entry.bind("<Button-1>", self.entry_clear)
-        self.pw_entry.bind("<Button-1>", self.entry_clear)
+        self.un_entry.bind("<Button-1>", self.entry_clear_un)
+        self.pw_entry.bind("<Button-1>", self.entry_clear_un)
 
         self.log_button = Button(self.root, text="register", font=("Clibri", 12), width=7, fg="white", bg="#42536e",
                                  command=self.conf_screen)
@@ -372,62 +372,70 @@ class ProjectGui:
         self.data_frame = LabelFrame(self.root, text = "packet information", fg="black", bg="#75BFD7")
         self.data_frame.pack(fill="x", expand="yes", padx=20)
 
-        id_lable = Label(self.data_frame, text="Packet ID", bg="#75BFD7")
-        id_lable.grid(row=0, column=0, padx=10, pady=10)
-        id_entry = Entry(self.data_frame)
-        id_entry.grid(row=0, column=1, padx=10, pady=10)
+        self.id_lable = Label(self.data_frame, text="Packet ID", bg="#75BFD7")
+        self.id_lable.grid(row=0, column=0, padx=10, pady=10)
+        self.id_entry = Entry(self.data_frame)
+        self.id_entry.grid(row=0, column=1, padx=10, pady=10)
 
-        srcip_lable = Label(self.data_frame, text="Src ip",bg="#75BFD7")
-        srcip_lable.grid(row=0, column=2, padx=10, pady=10)
-        srcip_entry = Entry(self.data_frame)
-        srcip_entry.grid(row=0, column=3, padx=10, pady=10)
+        self.srcip_lable = Label(self.data_frame, text="Src ip",bg="#75BFD7")
+        self.srcip_lable.grid(row=0, column=2, padx=10, pady=10)
+        self.srcip_entry = Entry(self.data_frame)
+        self.srcip_entry.grid(row=0, column=3, padx=10, pady=10)
 
-        dstip_lable = Label(self.data_frame, text="Dst ip", bg="#75BFD7")
-        dstip_lable.grid(row=0, column=4, padx=10, pady=10)
-        dstip_entry = Entry(self.data_frame)
-        dstip_entry.grid(row=0, column=5, padx=10, pady=10)
+        self.dstip_lable = Label(self.data_frame, text="Dst ip", bg="#75BFD7")
+        self.dstip_lable.grid(row=0, column=4, padx=10, pady=10)
+        self.dstip_entry = Entry(self.data_frame)
+        self.dstip_entry.grid(row=0, column=5, padx=10, pady=10)
 
-        rt_lable = Label(self.data_frame, text="Request type", bg="#75BFD7")
-        rt_lable.grid(row=0, column=6, padx=10, pady=10)
-        rt_entry = Entry(self.data_frame)
-        rt_entry.grid(row=0, column=7, padx=10, pady=10)
+        self.rt_lable = Label(self.data_frame, text="Request type", bg="#75BFD7")
+        self.rt_lable.grid(row=0, column=6, padx=10, pady=10)
+        self.rt_entry = Entry(self.data_frame)
+        self.rt_entry.grid(row=0, column=7, padx=10, pady=10)
 
-        rp_lable = Label(self.data_frame, text="Request parameters", bg="#75BFD7")
-        rp_lable.grid(row=1, column=0, padx=10, pady=10)
-        rp_entry = Entry(self.data_frame)
-        rp_entry.grid(row=1, column=1, padx=10, pady=10)
+        self.rp_lable = Label(self.data_frame, text="Request parameters", bg="#75BFD7")
+        self.rp_lable.grid(row=1, column=0, padx=10, pady=10)
+        self.rp_entry = Entry(self.data_frame)
+        self.rp_entry.grid(row=1, column=1, padx=10, pady=10)
 
-        data_lable = Label(self.data_frame, text="data", bg="#75BFD7")
-        data_lable.grid(row=1, column=2, padx=10, pady=10)
-        data_entry = Entry(self.data_frame)
-        data_entry.grid(row=1, column=3, padx=10, pady=10)
+        self.data_lable = Label(self.data_frame, text="data", bg="#75BFD7")
+        self.data_lable.grid(row=1, column=2, padx=10, pady=10)
+        self.data_entry = Entry(self.data_frame)
+        self.data_entry.grid(row=1, column=3, padx=10, pady=10)
 
-        sp_lable = Label(self.data_frame, text="Src port", bg="#75BFD7")
-        sp_lable.grid(row=1, column=4, padx=10, pady=10)
-        sp_entry = Entry(self.data_frame)
-        sp_entry.grid(row=1, column=5, padx=10, pady=10)
+        self.sp_lable = Label(self.data_frame, text="Src port", bg="#75BFD7")
+        self.sp_lable.grid(row=1, column=4, padx=10, pady=10)
+        self.sp_entry = Entry(self.data_frame)
+        self.sp_entry.grid(row=1, column=5, padx=10, pady=10)
 
-        dp_lable = Label(self.data_frame, text="Dst port", bg="#75BFD7")
-        dp_lable.grid(row=1, column=6, padx=10, pady=10)
-        dp_entry = Entry(self.data_frame)
-        dp_entry.grid(row=1, column=7, padx=10, pady=10)
+        self.dp_lable = Label(self.data_frame, text="Dst port", bg="#75BFD7")
+        self.dp_lable.grid(row=1, column=6, padx=10, pady=10)
+        self.dp_entry = Entry(self.data_frame)
+        self.dp_entry.grid(row=1, column=7, padx=10, pady=10)
 
         self.button_frame = LabelFrame(self.root, text="Commands", bg="#75BFD7")
         self.button_frame.pack(fill="x", expand="yes", padx=20)
 
-        update_button = Button(self.button_frame, text="continue",bg="#67A6BB")
-        update_button.grid(row=0, column=1, padx=10, pady=10)
+        cont_button = Button(self.button_frame, text="continue",bg="#67A6BB", command= self.resume_send)
+        cont_button.grid(row=0, column=1, padx=10, pady=10)
 
-        stop_button = Button(self.button_frame, text="pause sennding packets", bg="#67A6BB")
+        stop_button = Button(self.button_frame, text="pause sennding packets", bg="#67A6BB", command= self.pause_packets)
         stop_button.grid(row=0, column=0, padx=10, pady=10)
 
-        restore_button = Button(self.button_frame, text="stop attack", bg="#67A6BB")
+        restore_button = Button(self.button_frame, text="stop attack", bg="#67A6BB", command=self.stop_attack)
         restore_button.grid(row=0, column=2, padx=10, pady=10)
+
+        select_button = Button(self.button_frame, text="select packet", bg="#67A6BB", command=self.selected_packet)
+        select_button.grid(row=0, column=3, padx=10, pady=10)
+
+        update_button = Button(self.button_frame, text="update", bg="#67A6BB", command= self.update_db)
+        update_button.grid(row=0, column=4, padx=10, pady=10)
+
+        self.my_tree.bind("<ButtonRelease-1>", self.selected_packet)
 
         self.count = 0
         print("real vip" + str(VICTIM_IP))
-        attacker = FinalRun(VICTIM_IP,GATEWAYIP, self.insert_to_table)
-        attacker.start()
+        self.attacker = FinalRun(VICTIM_IP,GATEWAYIP, self.insert_to_table)
+        self.attacker.start()
 
     def insert_to_table(self, info: Tuple[str, Tuple[str, ...]]):
         if self.count % 2 == 0:
@@ -436,19 +444,51 @@ class ProjectGui:
             self.my_tree.insert(parent='', index='end', iid=self.count, text='', values=info[1], tags=('oddrow',))
         self.count += 1
 
+    def selected_packet(self, e):
+        self.id_entry.config(state="normal")
+        self.clear_entry()
 
-    def edit_screen(self):
-        self.lable1.destroy()
-        self.read_b.destroy()
-        self.change_b.destroy()
-        self.start_btn.destroy()
-        self.root.configure(bg="white")
+        selected = self.my_tree.focus()
+        val = self.my_tree.item(selected, 'values')
+
+        self.id_entry.insert(0, val[0])
+        self.id_entry.config(state="disabled")
+
+        self.srcip_entry.insert(0, val[1])
+        self.dstip_entry.insert(0, val[2])
+        self.rt_entry.insert(0, val[3])
+        self.rp_entry.insert(0, val[4])
+        self.data_entry.insert(0, val[5])
+        self.sp_entry.insert(0, val[6])
+        self.dp_entry.insert(0, val[7])
+
+    def stop_attack(self):
+        self.attacker.stop()
+
+    def pause_packets(self):
+        self.attacker.pause()
+
+    def clear_entry(self):
+        self.id_entry.delete(0, END)
+        self.srcip_entry.delete(0, END)
+        self.dstip_entry.delete(0, END)
+        self.rt_entry.delete(0, END)
+        self.rp_entry.delete(0, END)
+        self.data_entry.delete(0, END)
+        self.sp_entry.delete(0, END)
+        self.dp_entry.delete(0, END)
 
 
-        #attack = FinalRun(VICTIM_IP, GATEWAYIP)
-        #attack.start()
+    def update_db(self):
+        selected = self.my_tree.focus()
+        self.my_tree.item(selected, values= (self.id_entry.get(), self.srcip_entry.get(), self.dstip_entry.get(),
+                                             self.rt_entry.get(), self.rp_entry.get(),self.data_entry.get(),
+                                             self.sp_entry.get(), self.dp_entry.get()))
+        self.clear_entry()
 
 
+    def resume_send(self):
+        self.attacker.resume()
 
 if __name__ == '__main__':
     x = ProjectGui()

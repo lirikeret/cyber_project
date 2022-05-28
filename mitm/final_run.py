@@ -12,5 +12,11 @@ class FinalRun:
         t_sniff.start()
         print("started sniffing")
 
+    def stop(self):
+        self.sniffer.spoofer.set_on('stop')
 
+    def pause(self):
+        self.sniffer.set_sendpac(False)
 
+    def resume(self):
+        self.sniffer.set_sendpac(True)

