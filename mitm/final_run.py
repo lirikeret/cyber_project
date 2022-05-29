@@ -14,6 +14,8 @@ class FinalRun:
 
     def stop(self):
         self.sniffer.spoofer.set_on('stop')
+        self.sniffer.set_on('stop')
+        self.sniffer.set_sendpac(False)
 
     def pause(self):
         self.sniffer.set_sendpac(False)

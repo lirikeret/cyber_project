@@ -85,21 +85,25 @@ class ProjectGui:
         self.var.set(1)
         self.read_b = Radiobutton(self.root, text="Read data", font=("Clibri", 20), variable=self.var, value=1)
         self.change_b = Radiobutton(self.root, text="Edit data", font=("Clibri", 20), variable=self.var, value=2)
+        self.tree_frame = Frame(self.root)
+        self.tree_scroll = Scrollbar(self.tree_frame)
+        self.my_tree = ttk.Treeview(self.tree_frame, yscrollcommand=self.tree_scroll.set, selectmode="extended")
+        self.data_frame = LabelFrame(self.root, text="packet information", fg="black", bg="#75BFD7")
+        self.id_lable = Label(self.data_frame, text="Packet ID", bg="#75BFD7")
+        self.button_frame = LabelFrame(self.root, text="Commands", bg="#75BFD7")
 
 
     def check_validation(self, pw, un):
-        #TODO: block weak passwords and username (8 chars min, several characters etc.)
+        """
+        :param pw: password
+        :param un: username
+        :return: true (valid) if pw & un are 8 chars or more and are safe from sql injection
+        """
         for i in INVALID_LIST:
-            if i in pw or i in un:
+            if i in pw or i in un or len(pw)<8 or len(un)<8:
                 return False
         return True
 
-    def resizer(self, e, canvas):
-        global bg1, resized_bg, new_bg
-        bg1 = Image.open(r"C:\Cyber\hacker2.webp")
-        resized_bg = bg1.resize((e.width, e.height), Image.ANTIALIAS)
-        new_bg = ImageTk.PhotoImage(resized_bg)
-        canvas.create_image(0, 0, image=new_bg, anchor="nw")
 
     def login_registry_screen(self):
         self.my_canvas.destroy()
@@ -124,9 +128,16 @@ class ProjectGui:
         reg_button_window = self.my_canvas.create_window(195, 300, anchor="nw", window=self.reg_button)
         log_button_window = self.my_canvas.create_window(195, 250, anchor="nw", window=self.log_button)
 
-        # root.bind('<Configure>', lambda x: resizer(x, my_canvas))
-
         self.root.mainloop()
+        try:
+            if self.attacker:
+                self.attacker.stop()
+                self.attacker.sniffer.set_on('stop')
+            exit(0)
+        except AttributeError:
+            exit(0)
+
+
 
     def entry_clear_un(self, e):
         if self.un_entry.get() == "username" or self.pw_entry.get() == "password":
@@ -210,7 +221,7 @@ class ProjectGui:
         back_button_window = self.my_canvas.create_window(10, 10, anchor="nw", window=self.back_button)
 
         self.textid = self.my_canvas.create_text(90, 100,
-                                                 text="Welcome! please enter your desiered username and password. "
+                                                 text="Welcome! please enter your desiered username and password (at least 8 chars). "
                                                       "After the registry, log in.", font=("Clibri bald", 12),
                                                  fill="white",
                                                  width=160)
@@ -218,7 +229,11 @@ class ProjectGui:
     def conf_screen(self):
         pw = str(self.pw_entry.get())
         un = str(self.un_entry.get())
-        if self.users.insert_user(un, pw) == "exists":
+        if not self.check_validation(pw,un):
+            self.my_canvas.delete(self.textid)
+            self.textid = self.my_canvas.create_text(90, 100, text="Input invalid", font=("Clibri bald", 12),
+                                                     fill="white", width=160)
+        elif self.users.insert_user(un, pw) == "exists":
             self.my_canvas.delete(self.textid)
             self.textid = self.my_canvas.create_text(90, 100, text="User already exists.", font=("Clibri bald", 12),
                                                      fill="white", width=160)
@@ -232,6 +247,9 @@ class ProjectGui:
 
     def main_screen(self):
         self.my_canvas.destroy()
+        self.tree_frame.destroy()
+        self.data_frame.destroy()
+        self.button_frame.destroy()
 
         self.root.geometry("900x500+290+150")
         self.root.title("MITM main screen")
@@ -334,18 +352,18 @@ class ProjectGui:
         style.configure("Treeview", background="D3D3D3", foreground="white", rowheight=25, fieldbackground= "D3D3D3")
         style.map("Treeview", background=[('selected', "#347083")])
 
-        tree_frame = Frame(self.root)
-        tree_frame.pack(pady=10)
-        tree_scroll = Scrollbar(tree_frame)
-        tree_scroll.pack(side=RIGHT, fill=Y)
+        self.tree_frame = Frame(self.root)
+        self.tree_frame.pack(pady=10)
+        self.tree_scroll = Scrollbar(self.tree_frame)
+        self.tree_scroll.pack(side=RIGHT, fill=Y)
 
-        self.my_tree = ttk.Treeview(tree_frame, yscrollcommand=tree_scroll.set, selectmode= "extended")
+        self.my_tree = ttk.Treeview(self.tree_frame, yscrollcommand=self.tree_scroll.set, selectmode= "extended")
         self.my_tree.pack()
 
-        tree_scroll.config(command= self.my_tree.yview())
+        self.tree_scroll.config(command= self.my_tree.yview())
 
         self.my_tree['columns'] = ("packet id", "src ip", "dst ip", "request type", "request parameters", "data", "src port"
-                              , "dst port")
+                                   , "dst port")
         self.my_tree.column("#0", width=0, stretch=NO)
         self.my_tree.column("packet id", anchor=CENTER, width=100)
         self.my_tree.column("src ip", anchor=W, width=120)
@@ -424,11 +442,11 @@ class ProjectGui:
         restore_button = Button(self.button_frame, text="stop attack", bg="#67A6BB", command=self.stop_attack)
         restore_button.grid(row=0, column=2, padx=10, pady=10)
 
-        select_button = Button(self.button_frame, text="select packet", bg="#67A6BB", command=self.selected_packet)
-        select_button.grid(row=0, column=3, padx=10, pady=10)
-
         update_button = Button(self.button_frame, text="update", bg="#67A6BB", command= self.update_db)
-        update_button.grid(row=0, column=4, padx=10, pady=10)
+        update_button.grid(row=0, column=3, padx=10, pady=10)
+
+        startover_button = Button(self.button_frame, text="start over", bg="#67A6BB", command=self.startover)
+        startover_button.grid(row=0, column=4, padx=10, pady=10)
 
         self.my_tree.bind("<ButtonRelease-1>", self.selected_packet)
 
@@ -490,6 +508,16 @@ class ProjectGui:
     def resume_send(self):
         self.attacker.resume()
 
+    def exit(self):
+        self.attacker.stop()
+
+    def startover(self):
+        self.stop_attack()
+        self.main_screen()
+
+
 if __name__ == '__main__':
     x = ProjectGui()
     x.login_registry_screen()
+    print("exiting")
+    exit(0)
