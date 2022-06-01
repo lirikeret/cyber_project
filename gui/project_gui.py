@@ -16,6 +16,11 @@ IP_LIST = []
 VICTIM_IP = ''
 
 def find_mask():
+    """
+    gets the ipconfig command info from the cmd, and uses re to find the ip numbers which matches the 255 areas in the
+    sbnet mask
+    :return: gateway ip, ip subnet mask
+    """
     text = str(subprocess.check_output("cmd /c ipconfig", stderr=subprocess.STDOUT, shell=True))
     subnet_mask = re.search(SUBNET_REG, text).group(1)
     gateway = re.search(GATEWAY_REG, text).group(1)
@@ -28,6 +33,11 @@ def find_mask():
     return check_ip, gateway
 
 def clean_ip_list(ips, mask):
+    """
+    :param ips: the list on current avalable ip addresses in the network
+    :param mask: the subnet mask
+    :return: a list of ips which matches the subnet mask, without the ip of the attacking machine
+    """
     final_list = []
     for ip in ips:
         x = ip.split(".")
@@ -41,6 +51,11 @@ def clean_ip_list(ips, mask):
     return final_list
 
 def avalable_ip_adresses():
+    """
+    gets all the ip adresses in the network using arp -a in the cmd, then uses the helping functions to filter the ips
+    which are attackable
+    :return: a string with all the avalable ip adresses to attack
+    """
     global IP_LIST, GATEWAYIP
     ip_addresses = str(subprocess.check_output("cmd /c arp -a", stderr=subprocess.STDOUT, shell=True))
     IP_LIST = re.findall(CMDIP_REGEX, ip_addresses)
@@ -70,10 +85,10 @@ class ProjectGui:
         self.pw_entry = Entry(self.root, font=("Clibri", 18), width=14, fg="black", bg="white", bd=0)
         self.users = Users()
         self.login_btn = Button(self.root, text="login", font=("Clibri", 12), width=7, fg="white", bg="#42536e",
-                                command=self.handle_info)
+                                command=self.handle_info_login)
         self.textid = 0
         self.start_btn = Button(self.root, text="start", font=("Clibri", 10), width=5, fg="white", bg="white",
-                                command=self.check_input)
+                                command=self.check_ip)
         self.victimip_entry = Entry(self.root, font=("Clibri", 18), width=14, fg="black", bg="white", bd=0)
         self.gatewayip_entry = Entry(self.root, font=("Clibri", 18), width=14, fg="black", bg="white", bd=0)
         self.lable1 = Label(self.root, text="Invalid input.", font=("Clibri", 20), bg=BG_COLOR1)
@@ -106,6 +121,9 @@ class ProjectGui:
 
 
     def login_registry_screen(self):
+        """
+        runs the first screen, in which you choose to register or log in
+        """
         self.my_canvas.destroy()
 
         self.root.geometry("485x355+480+200")
@@ -137,15 +155,19 @@ class ProjectGui:
         except AttributeError:
             exit(0)
 
-
-
     def entry_clear_un(self, e):
+        """
+        clears the entry boxes in the first screen
+        """
         if self.un_entry.get() == "username" or self.pw_entry.get() == "password":
             self.un_entry.delete(0, END)
             self.pw_entry.delete(0, END)
             self.pw_entry.config(show="*")
 
     def login_screen(self):
+        """
+        opens the login screen and checks if the information is right. if so, opens the main screen
+        """
         self.reg_button.destroy()
         self.log_button.destroy()
 
@@ -163,22 +185,26 @@ class ProjectGui:
         self.un_entry.bind("<Button-1>", self.entry_clear_un)
         self.pw_entry.bind("<Button-1>", self.entry_clear_un)
 
+        self.root.bind('<Return>', self.handle_info_login)
         self.login_btn = Button(self.root, text="login", font=("Clibri", 12), width=7, fg="white", bg="#42536e",
-                                command=self.handle_info)
+                                command=self.handle_info_login)
         self.back_button = Button(self.root, text="back", font=("Clibri", 10), width=5, fg="white", bg="#2a3e5a",
                                   command=self.login_registry_screen)
 
         log_button_window = self.my_canvas.create_window(380, 292, anchor="nw", window=self.login_btn)
         back_button_window = self.my_canvas.create_window(10, 10, anchor="nw", window=self.back_button)
 
-    def handle_info(self):
+    def handle_info_login(self, e=None):
+        """
+        gets pw and un from login screen and chacks if the user exists. if so, opens the main screen.
+        """
         pw = str(self.pw_entry.get())
         un = str(self.un_entry.get())
         valid = self.check_validation(pw, un)
         if valid:
             ans = self.users.check_user(un, pw)
             if ans:
-                self.main_screen()
+                self.ip_choosing_screen()
             elif not ans:
                 self.my_canvas.delete(self.textid)
                 self.textid = self.my_canvas.create_text(90, 100, text="Username or password are incorrect.",
@@ -192,9 +218,9 @@ class ProjectGui:
 
     def reg_screen(self):
         """
-        pwhen finidhed, sent to confirmation screen
-        :return:
+        opens the registry screen and checks if the information is right.
         """
+
         self.reg_button.destroy()
         self.log_button.destroy()
 
@@ -212,6 +238,7 @@ class ProjectGui:
         self.un_entry.bind("<Button-1>", self.entry_clear_un)
         self.pw_entry.bind("<Button-1>", self.entry_clear_un)
 
+        self.root.bind('<Return>', self.conf_screen)
         self.log_button = Button(self.root, text="register", font=("Clibri", 12), width=7, fg="white", bg="#42536e",
                                  command=self.conf_screen)
         self.back_button = Button(self.root, text="back", font=("Clibri", 10), width=5, fg="white", bg="#2a3e5a",
@@ -226,16 +253,21 @@ class ProjectGui:
                                                  fill="white",
                                                  width=160)
 
-    def conf_screen(self):
+    def conf_screen(self, e=None):
+        """
+        gets the new pw and un the user inserted. checks if they are valid, or exsits. if so, it requiers them to fill
+        again. otherwise, its inserting the new user to the db.
+        :return:
+        """
         pw = str(self.pw_entry.get())
         un = str(self.un_entry.get())
         if not self.check_validation(pw,un):
             self.my_canvas.delete(self.textid)
-            self.textid = self.my_canvas.create_text(90, 100, text="Input invalid", font=("Clibri bald", 12),
+            self.textid = self.my_canvas.create_text(90, 100, text="Invalid input", font=("Clibri bald", 12),
                                                      fill="white", width=160)
         elif self.users.insert_user(un, pw) == "exists":
             self.my_canvas.delete(self.textid)
-            self.textid = self.my_canvas.create_text(90, 100, text="User already exists.", font=("Clibri bald", 12),
+            self.textid = self.my_canvas.create_text(90, 100, text="Invalid input", font=("Clibri bald", 12),
                                                      fill="white", width=160)
         else:
             self.my_canvas.delete(self.textid)
@@ -245,7 +277,10 @@ class ProjectGui:
             self.my_canvas.create_text(90, 100, text="Registry completed successfully! go back and log in. ",
                                        font=("Clibri bald", 12), fill="white", width=160)
 
-    def main_screen(self):
+    def ip_choosing_screen(self):
+        """
+        opens a screen in which you can choose the attacked ip address
+        """
         self.my_canvas.destroy()
         self.tree_frame.destroy()
         self.data_frame.destroy()
@@ -259,7 +294,9 @@ class ProjectGui:
         # self.root.resizable(height=True, width=True)
 
         self.start_btn = Button(self.root, text="start", font=("Clibri", 18), width=5, fg="black", bg="white",
-                                command=self.check_input)
+                                command=self.check_ip)
+        self.root.bind('<Return>', self.check_ip)
+
 
         self.start_btn.pack()
         self.start_btn.place(relx=0.45, rely=0.8, anchor="nw")
@@ -284,36 +321,46 @@ class ProjectGui:
         self.lable4.place(relx=0.78, rely=0.18, anchor="nw")
 
     def is_ip(self, addr):
+        """
+        :param addr: ip address
+        :return: if the address is ip or not
+        """
         if re.search(IP_REGEX, addr):
             return True
         else:
             return False
 
     def is_in_list(self, ip, lst):
+        """
+        :param ip: ip address
+        :param lst: avalable ip list
+        :return: if it is in the list or not
+        """
         for i in lst:
             print(i)
             if ip == i:
                 return True
         return False
 
-    def check_input(self):
+    def check_ip(self, e=None):
+        """
+        checks if the ip is avalable, if so it starts the attack
+        :return: if invalid, prints a massage to the screen
+        """
         global VICTIM_IP
         VICTIM_IP = str(self.victimip_entry.get())
-        print("vip: " + str(VICTIM_IP))
         gwip = str(self.gatewayip_entry.get())
-        print(str(gwip) + str(VICTIM_IP))
-        print(str(self.is_ip(VICTIM_IP)) + str(self.is_ip(gwip)) + str(self.is_in_list(VICTIM_IP, IP_LIST)) + str(gwip == GATEWAYIP))
         if self.is_ip(VICTIM_IP) and self.is_ip(gwip) and self.is_in_list(VICTIM_IP, IP_LIST) and gwip == GATEWAYIP:
-            self.action_screen()
+            self.sniffing_screen()
         else:
             self.lable5 = Label(self.root, text="Invalid input.", font=("Clibri", 20), bg=BG_COLOR1)
             self.lable5.place(relx=0.1, rely=0.4, anchor="nw")
 
     def choose_action(self, value):
         if value == 1:
-            self.read_screen()
+            self.sniffing_screen()
         elif value == 2:
-            self.edit_screen()
+            self.get_db_file()
 
     def action_screen(self):
         self.lable5.destroy()
@@ -326,8 +373,9 @@ class ProjectGui:
         self.start_btn.destroy()
 
         self.read_b = Radiobutton(self.root, text="Read data", font=("Clibri", 20), variable=self.var, value=1, bg=BG_COLOR1)
-        self.change_b = Radiobutton(self.root, text="Edit data", font=("Clibri", 20), variable=self.var, value=2, bg=BG_COLOR1)
+        self.change_b = Radiobutton(self.root, text="Download current db", font=("Clibri", 20), variable=self.var, value=2, bg=BG_COLOR1)
 
+        self.root.bind('<Return>', lambda e: self.choose_action(self.var.get()))
         self.start_btn = Button(self.root, text="start", font=("Clibri", 18), width=5, fg="black", bg="white",
                                 command=lambda: self.choose_action(self.var.get()))
 
@@ -339,7 +387,13 @@ class ProjectGui:
         self.change_b.place(relx=0.4, rely=0.5, anchor="nw")
         self.start_btn.place(relx=0.42, rely=0.8, anchor="nw")
 
-    def read_screen(self):
+    def get_db_file(self):
+        pass
+
+    def sniffing_screen(self):
+        """
+        opens the main screen in which the user can watch and control the information
+        """
         self.root.geometry("1000x500+290+150")
         self.lable1.destroy()
         self.read_b.destroy()
@@ -386,6 +440,7 @@ class ProjectGui:
 
         self.my_tree.tag_configure('oddrow', background="white")
         self.my_tree.tag_configure('evenrow', background="lightblue")
+        self.my_tree.tag_configure('not sent', background="#25E0B0")
 
         self.data_frame = LabelFrame(self.root, text = "packet information", fg="black", bg="#75BFD7")
         self.data_frame.pack(fill="x", expand="yes", padx=20)
@@ -456,15 +511,28 @@ class ProjectGui:
         self.attacker.start()
 
     def insert_to_table(self, info: Tuple[str, Tuple[str, ...]]):
-        if self.count % 2 == 0:
-            self.my_tree.insert(parent='', index='end', iid=self.count, text='', values=info[1], tags=('evenrow',))
+        """
+        :param info: information about certain packet.
+        the func prints the info on the table.
+        the function is sent to the database object, so it prints every recived packet.
+        """
+        if not self.attacker.sniffer.sendpac:
+            # prints the stopped pacets in a different color
+            self.my_tree.insert(parent='', index='end', iid=self.count, text='', values=info[1], tags=('not sent',))
         else:
-            self.my_tree.insert(parent='', index='end', iid=self.count, text='', values=info[1], tags=('oddrow',))
+            if self.count % 2 == 0:
+                self.my_tree.insert(parent='', index='end', iid=self.count, text='', values=info[1], tags=('evenrow',))
+            else:
+                self.my_tree.insert(parent='', index='end', iid=self.count, text='', values=info[1], tags=('oddrow',))
         self.count += 1
 
     def selected_packet(self, e):
+        """
+        recives the info from a selected packet and prints ut on the entry boxes
+        """
+
         self.id_entry.config(state="normal")
-        self.clear_entry()
+        self.clear_table_entry()
 
         selected = self.my_tree.focus()
         val = self.my_tree.item(selected, 'values')
@@ -486,7 +554,7 @@ class ProjectGui:
     def pause_packets(self):
         self.attacker.pause()
 
-    def clear_entry(self):
+    def clear_table_entry(self):
         self.id_entry.delete(0, END)
         self.srcip_entry.delete(0, END)
         self.dstip_entry.delete(0, END)
@@ -498,22 +566,28 @@ class ProjectGui:
 
 
     def update_db(self):
+        """
+        updates the screen when packet information is updated, and sends it to the database.
+        """
         selected = self.my_tree.focus()
         self.my_tree.item(selected, values= (self.id_entry.get(), self.srcip_entry.get(), self.dstip_entry.get(),
                                              self.rt_entry.get(), self.rp_entry.get(),self.data_entry.get(),
                                              self.sp_entry.get(), self.dp_entry.get()))
-        self.clear_entry()
-
+        self.attacker.sniffer.update_pack(int(self.id_entry.get()), self.srcip_entry.get(), self.dstip_entry.get(),
+                                             self.rt_entry.get(), self.rp_entry.get(),self.data_entry.get(),
+                                             self.sp_entry.get(), self.dp_entry.get())
+        self.clear_table_entry()
 
     def resume_send(self):
         self.attacker.resume()
 
     def exit(self):
+        self.users.close()
         self.attacker.stop()
 
     def startover(self):
         self.stop_attack()
-        self.main_screen()
+        self.ip_choosing_screen()
 
 
 if __name__ == '__main__':
